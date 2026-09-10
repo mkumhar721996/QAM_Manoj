@@ -1,0 +1,10 @@
+{
+  "name": "qam-manoj-defect-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Defect tracking backend slice enforcing immutability on closed defects",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/**/*.test.ts"
+  }
+}
