@@ -1,0 +1,12 @@
+{
+  "name": "qam-manoj-defect-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "npm run test --prefix server && npm run test --prefix web",
+    "test:server": "npm run test --prefix server",
+    "test:web": "npm run test --prefix web",
+    "start:server": "npm run start --prefix server",
+    "start:web": "npm run start --prefix web"
+  }
+}
