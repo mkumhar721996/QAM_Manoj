@@ -1,0 +1,11 @@
+{
+  "name": "qam-manoj-defect-lifecycle",
+  "version": "1.0.0",
+  "description": "Defect status lifecycle API",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/"
+  }
+}
