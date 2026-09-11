@@ -2,7 +2,7 @@
 
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { createApp } = require("../src/app");
+const { createApp } = require("../src/app.cjs");
 
 const PASSWORD = "test-password";
 

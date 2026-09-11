@@ -2,13 +2,13 @@
 
 const http = require("node:http");
 
-const { InMemoryUserRepository } = require("./repositories/InMemoryUserRepository");
-const { TokenService } = require("./services/TokenService");
-const { AuthService } = require("./services/AuthService");
-const { AccountDeletionService } = require("./services/AccountDeletionService");
-const { authenticateRequest } = require("./http/middleware/authenticate");
-const { createAuthController } = require("./http/controllers/authController");
-const { createAccountController } = require("./http/controllers/accountController");
+const { InMemoryUserRepository } = require("./repositories/InMemoryUserRepository.cjs");
+const { TokenService } = require("./services/TokenService.cjs");
+const { AuthService } = require("./services/AuthService.cjs");
+const { AccountDeletionService } = require("./services/AccountDeletionService.cjs");
+const { authenticateRequest } = require("./http/middleware/authenticate.cjs");
+const { createAuthController } = require("./http/controllers/authController.cjs");
+const { createAccountController } = require("./http/controllers/accountController.cjs");
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
