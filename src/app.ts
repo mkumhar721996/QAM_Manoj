@@ -3,7 +3,7 @@ import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
 import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
-import { readJsonBody, sendJson } from "./httpUtils.ts";
+import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
@@ -60,6 +60,10 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse, authServ
     const result = handleLogout(authService, body);
     sendJson(res, result.status, result.body);
   } catch (err) {
+    if (err instanceof PayloadTooLargeError) {
+      sendJson(res, 413, { error: err.message });
+      return;
+    }
     console.error(`unhandled error for ${route}:`, err);
     sendJson(res, 400, { error: "invalid request" });
   }

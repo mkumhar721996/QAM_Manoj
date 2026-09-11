@@ -1,6 +1,7 @@
 import type { AuthService } from "./authService.ts";
 import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
 import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
+import { asRecord } from "../httpUtils.ts";
 
 export interface ControllerResponse {
   status: number;
@@ -8,8 +9,7 @@ export interface ControllerResponse {
 }
 
 export async function handleLogin(authService: AuthService, requestBody: unknown): Promise<ControllerResponse> {
-  const { username, password } =
-    requestBody && typeof requestBody === "object" ? (requestBody as Record<string, unknown>) : {};
+  const { username, password } = asRecord(requestBody);
 
   if (typeof username !== "string" || typeof password !== "string") {
     return { status: 400, body: { error: "username and password are required" } };
@@ -37,8 +37,7 @@ export async function handleLogin(authService: AuthService, requestBody: unknown
 }
 
 export function handleRefresh(authService: AuthService, requestBody: unknown): ControllerResponse {
-  const { refresh_token: refreshToken } =
-    requestBody && typeof requestBody === "object" ? (requestBody as Record<string, unknown>) : {};
+  const { refresh_token: refreshToken } = asRecord(requestBody);
 
   if (typeof refreshToken !== "string") {
     return { status: 400, body: { error: "refresh_token is required" } };
@@ -65,8 +64,7 @@ export function handleRefresh(authService: AuthService, requestBody: unknown): C
 }
 
 export function handleLogout(authService: AuthService, requestBody: unknown): ControllerResponse {
-  const { refresh_token: refreshToken } =
-    requestBody && typeof requestBody === "object" ? (requestBody as Record<string, unknown>) : {};
+  const { refresh_token: refreshToken } = asRecord(requestBody);
 
   if (typeof refreshToken !== "string") {
     return { status: 400, body: { error: "refresh_token is required" } };
