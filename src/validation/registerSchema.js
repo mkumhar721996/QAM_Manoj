@@ -3,6 +3,11 @@ const { ROLES } = require('../models/user');
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
 
+const PASSWORD_FIELD_MESSAGES = {
+  required: 'password is required',
+  tooShort: `password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+};
+
 function validateRegistration(body = {}) {
   const errors = {};
   const { name, email, password, role } = body;
@@ -18,9 +23,9 @@ function validateRegistration(body = {}) {
   }
 
   if (typeof password !== 'string' || password.length === 0) {
-    errors.password = 'password is required';
+    errors.password = PASSWORD_FIELD_MESSAGES.required;
   } else if (password.length < MIN_PASSWORD_LENGTH) {
-    errors.password = `password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+    errors.password = PASSWORD_FIELD_MESSAGES.tooShort;
   }
 
   if (typeof role !== 'string' || role.trim().length === 0) {
