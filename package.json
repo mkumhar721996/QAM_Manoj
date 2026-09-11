@@ -1,0 +1,10 @@
+{
+  "name": "qam-manoj-story-006",
+  "version": "1.0.0",
+  "description": "Registration & Role Assignment",
+  "main": "src/app.js",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "license": "ISC"
+}
