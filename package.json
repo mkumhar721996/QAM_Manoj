@@ -7,8 +7,10 @@
   "main": "src/server.ts",
   "scripts": {
     "start": "node --experimental-strip-types src/server.ts",
-    "test": "node --experimental-strip-types --test test/**/*.test.ts"
+    "test": "node --experimental-strip-types --env-file=.env.test --test test/**/*.test.ts"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
 }

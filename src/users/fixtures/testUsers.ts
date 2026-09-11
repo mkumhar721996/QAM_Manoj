@@ -11,23 +11,12 @@ export interface User {
 
 export const TEST_PASSWORD = "test-password";
 
-export const testUsers: User[] = [
-  {
-    id: "user-customer-1",
-    username: "customer1",
-    passwordHash: hashPassword(TEST_PASSWORD),
-    role: "customer",
-  },
-  {
-    id: "user-provider-1",
-    username: "provider1",
-    passwordHash: hashPassword(TEST_PASSWORD),
-    role: "provider",
-  },
-  {
-    id: "user-admin-1",
-    username: "admin1",
-    passwordHash: hashPassword(TEST_PASSWORD),
-    role: "admin",
-  },
+const testUserSeeds: Array<Omit<User, "passwordHash">> = [
+  { id: "user-customer-1", username: "customer1", role: "customer" },
+  { id: "user-provider-1", username: "provider1", role: "provider" },
+  { id: "user-admin-1", username: "admin1", role: "admin" },
 ];
+
+export const testUsers: User[] = await Promise.all(
+  testUserSeeds.map(async (seed) => ({ ...seed, passwordHash: await hashPassword(TEST_PASSWORD) })),
+);

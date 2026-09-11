@@ -4,7 +4,10 @@ import type { Role } from "../users/fixtures/testUsers.ts";
 export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-const JWT_SECRET = process.env.JWT_SECRET || "test-jwt-secret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable must be set");
+}
 
 export interface AccessTokenPayload {
   userId: string;

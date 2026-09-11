@@ -79,6 +79,38 @@ test("AC4: an unknown refresh token is rejected", async () => {
   }
 });
 
+test("AC3: a valid access token authenticates a protected request", async () => {
+  const server = await startTestServer();
+  try {
+    const { access_token: accessToken } = await login(server.baseUrl);
+
+    const res = await fetch(`${server.baseUrl}/auth/session`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { user_id: string; role: string };
+    assert.equal(body.user_id, "user-customer-1");
+    assert.equal(body.role, "customer");
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC3: a missing or invalid access token is rejected on a protected request", async () => {
+  const server = await startTestServer();
+  try {
+    const noAuthRes = await fetch(`${server.baseUrl}/auth/session`);
+    assert.equal(noAuthRes.status, 401);
+
+    const badAuthRes = await fetch(`${server.baseUrl}/auth/session`, {
+      headers: { Authorization: "Bearer not-a-real-token" },
+    });
+    assert.equal(badAuthRes.status, 401);
+  } finally {
+    await server.close();
+  }
+});
+
 test("AC9: a long idle period does not invalidate a still-valid refresh token", async () => {
   const sessionRepository = new SessionRepository();
   const server = await startTestServer({ sessionRepository });

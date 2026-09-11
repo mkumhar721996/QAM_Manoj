@@ -7,6 +7,7 @@ function hashToken(token: string): string {
 
 export class SessionRepository {
   private sessionsById: Map<string, Session> = new Map();
+  private sessionsByRefreshTokenHash: Map<string, Session> = new Map();
 
   create(userId: string, refreshToken: string, ttlMs: number, now: number = Date.now()): Session {
     const session: Session = {
@@ -18,17 +19,12 @@ export class SessionRepository {
       revoked: false,
     };
     this.sessionsById.set(session.id, session);
+    this.sessionsByRefreshTokenHash.set(session.refreshTokenHash, session);
     return session;
   }
 
   findByRefreshToken(refreshToken: string): Session | undefined {
-    const hash = hashToken(refreshToken);
-    for (const session of this.sessionsById.values()) {
-      if (session.refreshTokenHash === hash) {
-        return session;
-      }
-    }
-    return undefined;
+    return this.sessionsByRefreshTokenHash.get(hashToken(refreshToken));
   }
 
   revokeByRefreshToken(refreshToken: string): boolean {

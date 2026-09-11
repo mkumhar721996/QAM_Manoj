@@ -1,6 +1,6 @@
 import { UserRepository } from "../users/userRepository.ts";
 import { SessionRepository } from "../sessions/sessionRepository.ts";
-import { verifyPassword } from "./passwordHasher.ts";
+import { DUMMY_PASSWORD_HASH, verifyPassword } from "./passwordHasher.ts";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
   REFRESH_TOKEN_TTL_MS,
@@ -43,9 +43,11 @@ export class AuthService {
     this.sessionRepository = sessionRepository;
   }
 
-  login(username: string, password: string, now: number = Date.now()): LoginResult {
+  async login(username: string, password: string, now: number = Date.now()): Promise<LoginResult> {
     const user = this.userRepository.findByUsername(username);
-    const passwordMatches = user ? verifyPassword(password, user.passwordHash) : false;
+    // Always run scrypt, even for unknown usernames, so response timing doesn't
+    // reveal whether the account exists.
+    const passwordMatches = await verifyPassword(password, user ? user.passwordHash : DUMMY_PASSWORD_HASH);
 
     if (!user || !passwordMatches) {
       throw new InvalidCredentialsError();
@@ -83,7 +85,11 @@ export class AuthService {
     };
   }
 
-  logout(refreshToken: string): void {
-    this.sessionRepository.revokeByRefreshToken(refreshToken);
+  logout(refreshToken: string): boolean {
+    const revoked = this.sessionRepository.revokeByRefreshToken(refreshToken);
+    if (!revoked) {
+      console.warn("logout: refresh token not found or already revoked");
+    }
+    return revoked;
   }
 }
