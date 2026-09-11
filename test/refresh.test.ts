@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { startTestServer } from "./testServer.ts";
 import { TEST_PASSWORD } from "../src/users/fixtures/testUsers.ts";
 import { SessionRepository } from "../src/sessions/sessionRepository.ts";
+import { issueAccessToken } from "../src/auth/tokenService.ts";
 
 async function login(baseUrl: string): Promise<{ access_token: string; refresh_token: string }> {
   const res = await fetch(`${baseUrl}/auth/login`, {
@@ -106,6 +107,21 @@ test("AC3: a missing or invalid access token is rejected on a protected request"
       headers: { Authorization: "Bearer not-a-real-token" },
     });
     assert.equal(badAuthRes.status, 401);
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC3: an expired access token is rejected on a protected request", async () => {
+  const server = await startTestServer();
+  try {
+    const sixteenMinutesAgo = Date.now() - 16 * 60 * 1000;
+    const expiredAccessToken = issueAccessToken({ userId: "user-customer-1", role: "customer" }, sixteenMinutesAgo);
+
+    const res = await fetch(`${server.baseUrl}/auth/session`, {
+      headers: { Authorization: `Bearer ${expiredAccessToken}` },
+    });
+    assert.equal(res.status, 401);
   } finally {
     await server.close();
   }

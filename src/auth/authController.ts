@@ -1,6 +1,6 @@
 import type { AuthService } from "./authService.ts";
 import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
-import { verifyAccessToken } from "./tokenService.ts";
+import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
 
 export interface ControllerResponse {
   status: number;
@@ -77,17 +77,27 @@ export function handleLogout(authService: AuthService, requestBody: unknown): Co
   return { status: 204 };
 }
 
-export function handleGetSession(authorizationHeader: string | undefined): ControllerResponse {
+export function handleGetSession(authorizationHeader: string | undefined, now: number = Date.now()): ControllerResponse {
   const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
 
   if (!token) {
+    console.warn("session lookup failed: missing or malformed authorization header");
     return { status: 401, body: { error: "missing or malformed authorization header" } };
   }
 
-  const payload = verifyAccessToken(token);
+  const payload = verifyAccessToken(token, now);
   if (!payload) {
+    // decodeAccessToken skips the expiry check, so it tells us whether the
+    // token was well-formed and correctly signed but simply expired, vs invalid outright.
+    const decoded = decodeAccessToken(token);
+    console.warn(
+      decoded
+        ? `session lookup failed: expired access token for userId=${decoded.userId}`
+        : "session lookup failed: invalid access token",
+    );
     return { status: 401, body: { error: "invalid or expired access token" } };
   }
 
+  console.log(`session lookup succeeded for userId=${payload.userId}`);
   return { status: 200, body: { user_id: payload.userId, role: payload.role } };
 }
