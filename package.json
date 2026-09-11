@@ -1,0 +1,12 @@
+{
+  "name": "qam-manoj",
+  "version": "1.0.0",
+  "description": "User accounts & auth bootstrap: seeded super-admin and internal admin provisioning",
+  "main": "src/server.js",
+  "scripts": {
+    "seed:super-admin": "node src/cli/seedSuperAdmin.js",
+    "start": "node src/server.js",
+    "test": "node --test tests/"
+  },
+  "license": "ISC"
+}
