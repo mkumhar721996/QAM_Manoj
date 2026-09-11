@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node --experimental-strip-types src/server.ts",
     "start:account-deletion": "node src/server.cjs",
-    "test": "node --experimental-strip-types --env-file=.env.test --test test/**/*.test.ts"
+    "test": "node --experimental-strip-types --env-file=.env.test --test"
   },
   "dependencies": {},
   "devDependencies": {

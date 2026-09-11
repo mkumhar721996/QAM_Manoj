@@ -44,7 +44,13 @@ function sendJson(res, status, body) {
  * repository/services so tests can inspect state directly (e.g. asserting on
  * anonymised fields without a dedicated read endpoint).
  */
-function createApp({ tokenSecret = "test-secret" } = {}) {
+function createApp({ tokenSecret } = {}) {
+  if (!tokenSecret) {
+    throw new Error(
+      "createApp requires an explicit tokenSecret; refusing to fall back to a hardcoded default"
+    );
+  }
+
   const userRepository = new InMemoryUserRepository();
   const tokenService = new TokenService({ secret: tokenSecret, userRepository });
   const authService = new AuthService({ userRepository, tokenService });
