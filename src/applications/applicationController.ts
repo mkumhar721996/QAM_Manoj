@@ -109,7 +109,8 @@ export async function handleTransition(
 
   try {
     const updated = await applicationService.transitionState(applicationId, state as ApplicationState, {
-      rejectionReason: typeof rejectionReason === "string" ? rejectionReason : undefined,
+      rejectionReason:
+        typeof rejectionReason === "string" ? rejectionReason.replace(/[\r\n]+/g, " ") : undefined,
     });
     return { status: 200, body: toStatusBody(updated) };
   } catch (err) {

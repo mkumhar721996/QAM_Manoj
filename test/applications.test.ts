@@ -147,6 +147,7 @@ test("AC5: submitted->under_review, under_review->approved and under_review->rej
     assert.equal(sentEmails.length, 1);
     assert.match(sentEmails[0].subject, /under_review/);
     assert.equal(sentEmails[0].to, provider.email);
+    assert.equal(applicationRepository.findById("app-1")?.state, "under_review");
 
     await fetch(`${server.baseUrl}/applications/app-1/transition`, {
       method: "POST",
@@ -155,6 +156,7 @@ test("AC5: submitted->under_review, under_review->approved and under_review->rej
     });
     assert.equal(sentEmails.length, 2);
     assert.match(sentEmails[1].subject, /approved/);
+    assert.equal(applicationRepository.findById("app-1")?.state, "approved");
   } finally {
     await server.close();
   }
@@ -180,6 +182,9 @@ test("AC6: the rejection email includes the rejection reason", async () => {
     });
     assert.equal(res.status, 200);
     assert.match(sentEmails.at(-1)!.body, /Missing background check/);
+    const updatedApplication = applicationRepository.findById("app-1");
+    assert.equal(updatedApplication?.state, "rejected");
+    assert.equal(updatedApplication?.rejectionReason, "Missing background check");
   } finally {
     await server.close();
   }
@@ -388,6 +393,35 @@ test("AC15: after a resubmission, the prior rejection reason is no longer shown"
     });
     const body = (await res.json()) as Record<string, unknown>;
     assert.equal("rejectionReason" in body, false);
+  } finally {
+    await server.close();
+  }
+});
+
+test("security: CRLF in a rejection reason cannot inject extra email headers", async () => {
+  const applicationRepository = new ApplicationRepository();
+  const sentEmails: Array<{ to: string; subject: string; body: string }> = [];
+  const emailSender: EmailSender = {
+    send: async (to, subject, body) => {
+      sentEmails.push({ to, subject, body });
+    },
+  };
+  const server = await startTestServer({ applicationRepository, emailSender });
+  try {
+    const adminToken = await loginAs(server.baseUrl, "admin1");
+    seedApplication(applicationRepository, { id: "app-1", providerId: provider.id, state: "under_review" });
+
+    const maliciousReason = "bad\r\nBcc: attacker@example.com";
+    const res = await fetch(`${server.baseUrl}/applications/app-1/transition`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ state: "rejected", rejectionReason: maliciousReason }),
+    });
+    assert.equal(res.status, 200);
+    const responseBody = (await res.json()) as { rejectionReason: string };
+    assert.equal(responseBody.rejectionReason.includes("\r"), false);
+    assert.equal(responseBody.rejectionReason.includes("\n"), false);
+    assert.equal(sentEmails.at(-1)!.body.includes("\r\n"), false);
   } finally {
     await server.close();
   }
