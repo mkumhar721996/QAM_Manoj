@@ -2,11 +2,7 @@ import type { AuthService } from "./authService.ts";
 import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
 import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
 import { asRecord, extractBearerToken } from "../httpUtils.ts";
-
-export interface ControllerResponse {
-  status: number;
-  body?: Record<string, unknown>;
-}
+import type { ControllerResponse } from "../httpUtils.ts";
 
 export async function handleLogin(authService: AuthService, requestBody: unknown): Promise<ControllerResponse> {
   const { username, password } = asRecord(requestBody);

@@ -37,11 +37,13 @@ export class BookingService {
   confirmHold(holdId: string, requestingCustomerId: string, now: number = Date.now()): Booking {
     const hold = this.holdRepository.findById(holdId);
     const slot = hold ? this.slotRepository.findById(hold.slotId) : undefined;
-    if (!hold || !slot || hold.customerId !== requestingCustomerId) {
+    if (!hold || !slot || hold.customerId !== requestingCustomerId || slot.status !== "held") {
+      console.warn(`confirmHold rejected: no valid held hold found for holdId=${holdId}`);
       throw new HoldNotFoundError();
     }
 
     if (!this.holdRepository.isValid(hold, now)) {
+      console.warn(`confirmHold rejected: holdId=${holdId} expired, releasing slotId=${slot.id}`);
       this.slotRepository.release(slot.id);
       this.holdRepository.remove(hold.id);
       throw new HoldExpiredError();
@@ -60,6 +62,9 @@ export class BookingService {
 
     this.slotRepository.markBooked(slot.id);
     this.holdRepository.remove(hold.id);
+    console.log(
+      `confirmHold succeeded: bookingId=${booking.id} slotId=${slot.id} customerId=${hold.customerId} providerId=${slot.providerId}`,
+    );
     return booking;
   }
 

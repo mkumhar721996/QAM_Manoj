@@ -2,6 +2,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 const MAX_BODY_BYTES = 64 * 1024;
 
+export interface ControllerResponse {
+  status: number;
+  body?: Record<string, unknown>;
+}
+
 export class PayloadTooLargeError extends Error {
   constructor() {
     super("Request body too large");

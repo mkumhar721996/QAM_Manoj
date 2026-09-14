@@ -108,6 +108,30 @@ test("a customer cannot confirm another customer's hold", async () => {
   }
 });
 
+test("confirming a stale hold on a slot that is already booked is rejected without creating a duplicate booking", async () => {
+  const slotRepository = new SlotRepository();
+  const holdRepository = new HoldRepository();
+  const bookingRepository = new BookingRepository();
+  const server = await startTestServer({ slotRepository, holdRepository, bookingRepository });
+  try {
+    const slot = seedHeldSlot(slotRepository);
+    const hold = holdRepository.create(slot.id, "user-customer-1", HOLD_TTL_MS);
+    slotRepository.markBooked(slot.id);
+    const accessToken = await loginAs(server, "customer1");
+
+    const res = await fetch(`${server.baseUrl}/bookings/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ hold_id: hold.id }),
+    });
+
+    assert.equal(res.status, 404);
+    assert.equal(bookingRepository.findByCustomerId("user-customer-1").length, 0);
+  } finally {
+    await server.close();
+  }
+});
+
 test("confirming a hold without an access token is rejected", async () => {
   const slotRepository = new SlotRepository();
   const holdRepository = new HoldRepository();
