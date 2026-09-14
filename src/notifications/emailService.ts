@@ -17,7 +17,7 @@ export class InMemoryEmailService implements EmailService {
 }
 
 export class ConsoleEmailService implements EmailService {
-  async send(to: string, subject: string): Promise<void> {
-    console.log(`email to=${to} subject=${subject}`);
+  async send(to: string, subject: string, body: string): Promise<void> {
+    console.log(`email to=${to} subject=${subject} body=${body}`);
   }
 }
