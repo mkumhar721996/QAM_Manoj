@@ -3,31 +3,31 @@
  */
 
 :root {
-  --color-fg: [object Object]; /** Default body text color on color-bg. Passes WCAG AA (>7:1) for normal text. */
-  --color-bg: [object Object]; /** Default page/surface background. */
-  --color-surface: [object Object]; /** Slightly recessed surface, used for chips and inputs. */
-  --color-fg-muted: [object Object]; /** Secondary text, e.g. helper text and captions. */
-  --color-primary: [object Object]; /** Brand primary, used for primary actions and emphasis. */
-  --color-primary-hover: [object Object]; /** Hover/active state of color-primary. */
-  --color-primary-fg: [object Object]; /** Text/icon color on top of color-primary. */
-  --color-border: [object Object]; /** Default hairline border for cards, inputs, and dividers. */
-  --color-danger: [object Object]; /** Destructive actions and error states. */
-  --space-1: [object Object]; /** Smallest spacing increment. */
-  --space-2: [object Object];
-  --space-3: [object Object];
-  --space-4: [object Object];
-  --radius-sm: [object Object]; /** Chips, small controls. */
-  --radius-md: [object Object]; /** Buttons, inputs. */
-  --radius-lg: [object Object]; /** Cards, modals. */
-  --font-size-sm: [object Object];
-  --font-size-md: [object Object];
-  --font-size-lg: [object Object];
-  --border-width-default: [object Object];
+  --color-fg: #1f2937; /** Default body text color on color-bg. Passes WCAG AA (>7:1) for normal text. */
+  --color-bg: #ffffff; /** Default page/surface background. */
+  --color-surface: #f6f8fc; /** Slightly recessed surface, used for chips and inputs. */
+  --color-fg-muted: #6b7280; /** Secondary text, e.g. helper text and captions. */
+  --color-primary: #2563eb; /** Brand primary, used for primary actions and emphasis. */
+  --color-primary-hover: #1d4ed8; /** Hover/active state of color-primary. */
+  --color-primary-fg: #ffffff; /** Text/icon color on top of color-primary. */
+  --color-border: #d1d8e5; /** Default hairline border for cards, inputs, and dividers. */
+  --color-danger: #dc2626; /** Destructive actions and error states. */
+  --space-1: 4px; /** Smallest spacing increment. */
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --radius-sm: 4px; /** Chips, small controls. */
+  --radius-md: 8px; /** Buttons, inputs. */
+  --radius-lg: 16px; /** Cards, modals. */
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --border-width-default: 1px;
   --font-family-base: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-weight-regular: 400;
   --font-weight-bold: 600;
   --line-height-base: 1.5;
-  --shadow-sm: [object Object] [object Object] [object Object] [object Object] [object Object]; /** Resting elevation for cards. */
+  --shadow-sm: 0 2px 8px 0 rgba(31, 41, 55, 0.08); /** Resting elevation for cards. */
   --border-default: var(--color-border) solid var(--border-width-default); /** Composite hairline border used by cards and inputs. */
   --button-primary-background: var(--color-primary);
   --button-primary-background-hover: var(--color-primary-hover);
