@@ -43,6 +43,10 @@ export function readJsonBody(req: IncomingMessage): Promise<unknown> {
   });
 }
 
+export function extractBearerToken(authorizationHeader: string | undefined): string | undefined {
+  return authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
+}
+
 export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
