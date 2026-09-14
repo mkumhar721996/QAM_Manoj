@@ -19,7 +19,7 @@ function toDocumentView(doc: DocumentRecord): Record<string, unknown> {
   return {
     id: doc.id,
     file_name: doc.fileName,
-    uploaded_at: doc.uploadedAt,
+    uploaded_at: new Date(doc.uploadedAt).toISOString(),
     status: toStatusLabel(doc.status),
   };
 }
@@ -41,7 +41,7 @@ export function handleUploadDocument(
 
   try {
     const doc = service.upload(payload.userId, input.fileName, input.contentType, input.body);
-    return { status: 201, body: toDocumentView(doc) };
+    return { status: 202, body: toDocumentView(doc) };
   } catch (err) {
     if (err instanceof UnsupportedFileFormatError) {
       return { status: 400, body: { error: err.message } };

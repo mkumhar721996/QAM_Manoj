@@ -35,10 +35,10 @@ test("AC9: a provider's document list shows file name, upload date, and current 
       headers: { Authorization: `Bearer ${providerToken}` },
     });
     const { documents } = (await listRes.json()) as {
-      documents: Array<{ file_name: string; uploaded_at: number; status: string }>;
+      documents: Array<{ file_name: string; uploaded_at: string; status: string }>;
     };
     assert.equal(documents[0].file_name, "license.pdf");
-    assert.equal(typeof documents[0].uploaded_at, "number");
+    assert.equal(typeof documents[0].uploaded_at, "string");
     assert.equal(typeof documents[0].status, "string");
   } finally {
     await server.close();

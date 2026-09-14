@@ -7,7 +7,7 @@ export const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
 
 export class UnsupportedFileFormatError extends Error {
   constructor() {
-    super("Unsupported file format. Accepted formats: PDF, JPG, PNG");
+    super("Only PDF, JPG, and PNG files are accepted");
   }
 }
 

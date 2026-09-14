@@ -72,7 +72,7 @@ test("AC1: a PDF under 10 MB is accepted and queued for scanning", async () => {
       },
       body: Buffer.alloc(1024, 1),
     });
-    assert.equal(res.status, 201);
+    assert.equal(res.status, 202);
     const body = (await res.json()) as { id: string };
     assert.equal(documentRepository.findById(body.id)?.status, "pending_scan");
   } finally {
@@ -121,7 +121,7 @@ test("AC3: a non-PDF/JPG/PNG upload is rejected with the accepted-formats messag
     });
     assert.equal(res.status, 400);
     const body = (await res.json()) as { error: string };
-    assert.equal(body.error, "Unsupported file format. Accepted formats: PDF, JPG, PNG");
+    assert.equal(body.error, "Only PDF, JPG, and PNG files are accepted");
   } finally {
     await server.close();
   }
