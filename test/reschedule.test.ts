@@ -369,3 +369,33 @@ test("AC13: a confirmed booking starting within the next hour can still be resch
     await server.close();
   }
 });
+
+test("a reschedule request with new_end_time before new_start_time is rejected and does not change the booking", async () => {
+  const bookingRepository = new BookingRepository();
+  const server = await startTestServer({ bookingRepository });
+  try {
+    const originalStart = Date.now() + 2 * 60 * 60 * 1000;
+    const originalEnd = Date.now() + 3 * 60 * 60 * 1000;
+    const booking = bookingRepository.create({
+      customerId: CUSTOMER_1,
+      providerId: PROVIDER_1,
+      startTime: originalStart,
+      endTime: originalEnd,
+    });
+    const accessToken = await loginAs(server.baseUrl, "customer1");
+
+    const invertedStart = Date.now() + 6 * 60 * 60 * 1000;
+    const invertedEnd = Date.now() + 5 * 60 * 60 * 1000;
+    const res = await reschedule(server.baseUrl, booking.id, accessToken, invertedStart, invertedEnd);
+
+    assert.equal(res.status, 400);
+    const body = (await res.json()) as { error: string };
+    assert.match(body.error, /new_end_time must be after new_start_time/i);
+
+    const unchanged = bookingRepository.findById(booking.id)!;
+    assert.equal(unchanged.startTime, originalStart);
+    assert.equal(unchanged.endTime, originalEnd);
+  } finally {
+    await server.close();
+  }
+});

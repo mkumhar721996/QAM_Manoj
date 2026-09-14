@@ -23,6 +23,9 @@ export function handleReschedule(
   if (typeof newStartTime !== "number" || typeof newEndTime !== "number") {
     return { status: 400, body: { error: "new_start_time and new_end_time are required" } };
   }
+  if (newStartTime >= newEndTime) {
+    return { status: 400, body: { error: "new_end_time must be after new_start_time" } };
+  }
 
   try {
     const booking = rescheduleService.reschedule(bookingId, payload.userId, newStartTime, newEndTime, now);
