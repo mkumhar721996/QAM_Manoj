@@ -170,6 +170,30 @@ test("AC9: a rejected provider is denied access with an explicit message", async
   }
 });
 
+test("AC9/AC10: a pending provider's public profile is not disclosed", async () => {
+  const server = await startTestServer();
+  try {
+    const res = await fetch(`${server.baseUrl}/providers/user-provider-3/public-profile`);
+    assert.equal(res.status, 404);
+    const body = (await res.json()) as Record<string, unknown>;
+    assert.equal("business_name" in body, false);
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC9/AC10: a rejected provider's public profile is not disclosed", async () => {
+  const server = await startTestServer();
+  try {
+    const res = await fetch(`${server.baseUrl}/providers/user-provider-4/public-profile`);
+    assert.equal(res.status, 404);
+    const body = (await res.json()) as Record<string, unknown>;
+    assert.equal("business_name" in body, false);
+  } finally {
+    await server.close();
+  }
+});
+
 test("AC10: a provider cannot view or edit another provider's profile, and no data is disclosed", async () => {
   const server = await startTestServer();
   try {
