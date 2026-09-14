@@ -73,6 +73,27 @@ test("AC6: the unavailable response prompts choosing a different time", async ()
   }
 });
 
+test("an expired hold no longer exposes the previous holder's customer id once released", () => {
+  const slotRepository = new SlotRepository();
+  const slotService = new SlotService(slotRepository, new ProviderRepository(), new HoldConfigRepository());
+  const now = Date.now();
+  slotService.holdSlot("provider-approved-1", "slot-1", "user-customer-1", now);
+  const elevenMinutesLater = now + 11 * 60 * 1000;
+  const available = slotService.listAvailableSlots("provider-approved-1", elevenMinutesLater);
+  const releasedSlot = available.find((s) => s.id === "slot-1")!;
+  assert.equal(releasedSlot.heldByCustomerId, undefined);
+  assert.equal(releasedSlot.holdExpiresAt, undefined);
+});
+
+test("a held slot without an expiration is treated as unavailable, not available", () => {
+  const slotRepository = new SlotRepository([
+    { id: "slot-x", providerId: "provider-approved-1", startTime: "t", endTime: "t", status: "held" },
+  ]);
+  const slotService = new SlotService(slotRepository, new ProviderRepository(), new HoldConfigRepository());
+  const available = slotService.listAvailableSlots("provider-approved-1");
+  assert.equal(available.some((s) => s.id === "slot-x"), false);
+});
+
 test("AC7: a changed hold duration applies to new holds", async () => {
   const holdConfigRepository = new HoldConfigRepository();
   const server = await startTestServer({ holdConfigRepository });

@@ -54,12 +54,18 @@ export class SlotService {
   }
 
   private isAvailable(slot: Slot, now: number): boolean {
-    if (slot.status === "confirmed") {
-      return false;
-    }
-    if (slot.status === "held" && slot.holdExpiresAt !== undefined && slot.holdExpiresAt > now) {
+    this.releaseExpiredHold(slot, now);
+    if (slot.status === "confirmed" || slot.status === "held") {
       return false;
     }
     return true;
+  }
+
+  private releaseExpiredHold(slot: Slot, now: number): void {
+    if (slot.status === "held" && slot.holdExpiresAt !== undefined && slot.holdExpiresAt <= now) {
+      slot.status = "available";
+      slot.heldByCustomerId = undefined;
+      slot.holdExpiresAt = undefined;
+    }
   }
 }
