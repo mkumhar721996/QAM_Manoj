@@ -4,7 +4,7 @@ import { validateDefectInput } from "../validation/defectValidation.ts";
 import { DefectRepository } from "../repositories/defectRepository.ts";
 import { SEVERITY_OPTIONS, ENVIRONMENT_OPTIONS } from "../constants/defectOptions.ts";
 import type { DefectInput } from "../models/defect.ts";
-import { asRecord, PayloadTooLargeError, readJsonBody, sendJson } from "../httpUtils.ts";
+import { asRecord, PayloadTooLargeError, readJsonBody, sendJson } from "../../../src/httpUtils.ts";
 
 function toDefectInput(body: Record<string, unknown>): DefectInput {
   return {

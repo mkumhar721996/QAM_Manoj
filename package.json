@@ -2,6 +2,7 @@
   "name": "qam-manoj-defect-tracker",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "test": "npm run test --prefix server && npm run test --prefix web",
     "test:server": "npm run test --prefix server",
