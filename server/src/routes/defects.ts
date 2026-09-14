@@ -4,32 +4,17 @@ import { validateDefectInput } from "../validation/defectValidation.ts";
 import { DefectRepository } from "../repositories/defectRepository.ts";
 import { SEVERITY_OPTIONS, ENVIRONMENT_OPTIONS } from "../constants/defectOptions.ts";
 import type { DefectInput } from "../models/defect.ts";
+import { asRecord, PayloadTooLargeError, readJsonBody, sendJson } from "../httpUtils.ts";
 
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
-  const payload = JSON.stringify(body);
-  res.writeHead(status, { "content-type": "application/json" });
-  res.end(payload);
-}
-
-function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
-  return new Promise((resolve, reject) => {
-    let raw = "";
-    req.on("data", (chunk) => {
-      raw += chunk;
-    });
-    req.on("end", () => {
-      if (raw.trim().length === 0) {
-        resolve({});
-        return;
-      }
-      try {
-        resolve(JSON.parse(raw));
-      } catch {
-        reject(new Error("invalid JSON body"));
-      }
-    });
-    req.on("error", reject);
-  });
+function toDefectInput(body: Record<string, unknown>): DefectInput {
+  return {
+    title: body.title as DefectInput["title"],
+    description: body.description as DefectInput["description"],
+    severity: body.severity as DefectInput["severity"],
+    reporter: body.reporter as DefectInput["reporter"],
+    stepsToReproduce: body.stepsToReproduce as DefectInput["stepsToReproduce"],
+    environment: body.environment as DefectInput["environment"],
+  };
 }
 
 export function createDefectsRouter(repository: DefectRepository) {
@@ -38,8 +23,10 @@ export function createDefectsRouter(repository: DefectRepository) {
     res: ServerResponse,
     pathname: string,
   ): Promise<boolean> {
+    const rawUserId = (req.headers as Record<string, string | undefined>)["x-user-id"];
     const auth = requireAuth(req.headers as Record<string, string | undefined>);
     if (!auth.authenticated || auth.userId === null) {
+      console.warn("defects: authentication failed", { pathname, rawUserId: rawUserId ?? null });
       sendJson(res, 401, { error: "authentication required" });
       return true;
     }
@@ -52,19 +39,27 @@ export function createDefectsRouter(repository: DefectRepository) {
     if (pathname === "/api/defects" && req.method === "POST") {
       let body: Record<string, unknown>;
       try {
-        body = await readJsonBody(req);
-      } catch {
+        body = asRecord(await readJsonBody(req));
+      } catch (error) {
+        if (error instanceof PayloadTooLargeError) {
+          console.warn("defects: rejected oversized request body", { userId: auth.userId });
+          sendJson(res, 413, { errors: { body: "request body too large" } });
+          return true;
+        }
+        console.warn("defects: rejected invalid JSON body", { userId: auth.userId, error: String(error) });
         sendJson(res, 400, { errors: { body: "request body must be valid JSON" } });
         return true;
       }
 
       const validation = validateDefectInput(body);
       if (!validation.valid) {
+        console.warn("defects: validation failed", { userId: auth.userId, errors: validation.errors });
         sendJson(res, 400, { errors: validation.errors });
         return true;
       }
 
-      const created = repository.create(body as unknown as DefectInput, auth.userId);
+      const created = repository.create(toDefectInput(body), auth.userId);
+      console.info("defects: created defect", { defectId: created.id, userId: auth.userId });
       sendJson(res, 201, created);
       return true;
     }

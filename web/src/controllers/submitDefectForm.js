@@ -6,7 +6,13 @@ export async function submitDefectForm(values, api) {
     return { submitted: false, errors: validation.errors };
   }
 
-  const result = await api.createDefect(values);
+  let result;
+  try {
+    result = await api.createDefect(values);
+  } catch {
+    return { submitted: false, errors: { form: "Unable to reach the server. Please try again." } };
+  }
+
   if (!result.ok) {
     return { submitted: false, errors: result.errors };
   }

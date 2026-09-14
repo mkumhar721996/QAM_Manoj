@@ -2,6 +2,7 @@ import { createDefectsApi } from "./api/defectsApi.js";
 import { createDefectFlow } from "./pages/createDefectFlow.js";
 import { renderDefectCreationForm } from "./render/renderDefectCreationForm.js";
 import { renderDefectDetail } from "./render/renderDefectDetail.js";
+import { escapeHtml } from "./render/htmlEscape.js";
 import { MANDATORY_FIELDS } from "./validation/validateDefectForm.js";
 import { getApiBaseUrl } from "./config.js";
 
@@ -27,8 +28,19 @@ function readFormValues(form) {
 }
 
 async function showCreateForm(root, values = {}, errors = {}) {
-  const options = await api.getOptions();
-  root.innerHTML = renderDefectCreationForm({ options, values, errors });
+  let optionsResult;
+  try {
+    optionsResult = await api.getOptions();
+  } catch {
+    optionsResult = { ok: false, error: "Unable to reach the server." };
+  }
+
+  if (!optionsResult.ok) {
+    root.innerHTML = `<p id="options-error" role="alert">${escapeHtml(optionsResult.error ?? "Unable to load the defect form. Please try again later.")}</p>`;
+    return;
+  }
+
+  root.innerHTML = renderDefectCreationForm({ options: optionsResult.options, values, errors });
 
   const form = root.querySelector("#defect-creation-form");
   form.addEventListener("submit", async (event) => {

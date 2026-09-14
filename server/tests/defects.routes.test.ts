@@ -128,3 +128,29 @@ test("GET /api/defects/:id returns 404 for an unknown id", async () => {
     assert.equal(response.status, 404);
   });
 });
+
+test("POST /api/defects ignores unexpected fields and does not let a client spoof status or ownership", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/defects`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-user-id": "jane.doe" },
+      body: JSON.stringify({ ...validPayload, status: "Closed", createdBy: "attacker", maliciousField: "pwned" }),
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.equal(body.status, "Open");
+    assert.equal(body.createdBy, "jane.doe");
+    assert.equal(body.maliciousField, undefined);
+  });
+});
+
+test("POST /api/defects rejects a request body larger than the size limit with 413", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/defects`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-user-id": "jane.doe" },
+      body: JSON.stringify({ ...validPayload, title: "x".repeat(100_000) }),
+    });
+    assert.equal(response.status, 413);
+  });
+});

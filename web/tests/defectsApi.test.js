@@ -31,10 +31,26 @@ test("getOptions() requests the options endpoint with the auth header and return
   ]);
   const api = createDefectsApi({ baseUrl: "http://api.test", getUserId: () => "jane.doe", fetchImpl });
 
-  const options = await api.getOptions();
+  const result = await api.getOptions();
 
-  assert.deepEqual(options, { severity: ["Low"], environment: ["Staging"] });
+  assert.deepEqual(result, { ok: true, options: { severity: ["Low"], environment: ["Staging"] } });
   assert.equal(fetchImpl.calls[0].options.headers["x-user-id"], "jane.doe");
+});
+
+test("getOptions() returns an error result without throwing when the server rejects the request", async () => {
+  const fetchImpl = fakeFetch([
+    {
+      url: "http://api.test/api/defects/options",
+      method: "GET",
+      status: 401,
+      body: { error: "authentication required" },
+    },
+  ]);
+  const api = createDefectsApi({ baseUrl: "http://api.test", getUserId: () => "jane.doe", fetchImpl });
+
+  const result = await api.getOptions();
+
+  assert.deepEqual(result, { ok: false, error: "authentication required" });
 });
 
 test("createDefect() posts the payload as JSON and returns the created defect on success", async () => {

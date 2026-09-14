@@ -42,6 +42,15 @@ test("AC2: renders a distinct validation error message for each missing mandator
   }
 });
 
+test("associates every form control with its error message via aria-describedby", () => {
+  const html = renderDefectCreationForm({ options, values: {}, errors: {} });
+
+  for (const field of ["title", "description", "reporter", "stepsToReproduce", "severity", "environment"]) {
+    const controlMatch = new RegExp(`id="${field}"[^>]*aria-describedby="${field}-error"`).exec(html);
+    assert.ok(controlMatch, `expected the "${field}" control to have aria-describedby="${field}-error"`);
+  }
+});
+
 test("renders the previously entered values back into the fields", () => {
   const html = renderDefectCreationForm({
     options,

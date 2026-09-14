@@ -1,5 +1,6 @@
-export const API_PORT = 8001;
+const DEFAULT_API_PORT = 8001;
 
 export function getApiBaseUrl() {
-  return `${window.location.protocol}//${window.location.hostname}:${API_PORT}`;
+  const apiPort = window.__DEFECT_TRACKER_API_PORT__ ?? DEFAULT_API_PORT;
+  return `${window.location.protocol}//${window.location.hostname}:${apiPort}`;
 }

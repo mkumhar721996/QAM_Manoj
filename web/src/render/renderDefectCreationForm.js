@@ -16,8 +16,8 @@ function renderTextField(field, values, errors) {
   const value = escapeHtml(values[field.id] ?? "");
   const control =
     field.type === "textarea"
-      ? `<textarea id="${field.id}" name="${field.id}">${value}</textarea>`
-      : `<input id="${field.id}" name="${field.id}" type="text" value="${value}" />`;
+      ? `<textarea id="${field.id}" name="${field.id}" aria-describedby="${field.id}-error">${value}</textarea>`
+      : `<input id="${field.id}" name="${field.id}" type="text" value="${value}" aria-describedby="${field.id}-error" />`;
 
   return `
     <div class="field">
@@ -40,7 +40,7 @@ function renderSelectField(id, label, choices, values, errors) {
   return `
     <div class="field">
       <label for="${id}">${label}</label>
-      <select id="${id}" name="${id}">
+      <select id="${id}" name="${id}" aria-describedby="${id}-error">
         <option value="">-- select --</option>
         ${options}
       </select>
@@ -50,8 +50,13 @@ function renderSelectField(id, label, choices, values, errors) {
 }
 
 export function renderDefectCreationForm({ options, values = {}, errors = {} }) {
+  const formError = errors.form
+    ? `<p id="form-error" class="form-error" role="alert">${escapeHtml(errors.form)}</p>`
+    : "";
+
   return `
     <form id="defect-creation-form">
+      ${formError}
       ${renderTextField(TEXT_FIELDS[0], values, errors)}
       ${renderTextField(TEXT_FIELDS[1], values, errors)}
       ${renderSelectField("severity", "Severity", options.severity, values, errors)}

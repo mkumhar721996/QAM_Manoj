@@ -8,7 +8,11 @@ export function createDefectsApi({ baseUrl, getUserId, fetchImpl = fetch }) {
 
   async function getOptions() {
     const response = await fetchImpl(`${baseUrl}/api/defects/options`, { headers: headers() });
-    return response.json();
+    const body = await response.json();
+    if (!response.ok) {
+      return { ok: false, error: body.error };
+    }
+    return { ok: true, options: { severity: body.severity, environment: body.environment } };
   }
 
   async function createDefect(payload) {

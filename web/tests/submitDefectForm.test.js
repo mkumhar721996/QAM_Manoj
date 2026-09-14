@@ -50,3 +50,12 @@ test("surfaces server-side validation errors returned by the API without submitt
   assert.equal(result.submitted, false);
   assert.ok(result.errors.severity);
 });
+
+test("surfaces a form-level error instead of throwing when the API call rejects", async () => {
+  const api = { createDefect: async () => { throw new Error("network failure"); } };
+
+  const result = await submitDefectForm(validValues, api);
+
+  assert.equal(result.submitted, false);
+  assert.ok(result.errors.form);
+});
