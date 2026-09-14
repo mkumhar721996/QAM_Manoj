@@ -212,3 +212,29 @@ test("a failed payments signal leaves the booking confirmed so detection can be 
   assert.equal(stored?.status, "confirmed");
   assert.equal(stored?.financialOutcome, undefined);
 });
+
+test("AC10: a notification failure after a successful payments signal does not re-signal payments on retry", () => {
+  const { bookingRepository, policyRepository, payments, notifications, service } = createHarness();
+  const apptTime = Date.parse("2026-09-14T09:00:00Z");
+  policyRepository.create("standard-grace", { gracePeriodMinutes: 15, outcomeType: "fee", feeAmount: 22.5 }, apptTime - 1000);
+  const booking = bookingRepository.create({ id: "BKG-1", customerId: "cust-1", providerId: "prov-1", service: "Haircut", appointmentTime: apptTime, policyId: "standard-grace" });
+  let failCustomerNotification = true;
+  notifications.notifyCustomerNoShow = (b, now) => {
+    if (failCustomerNotification) {
+      throw new Error("notification service unavailable");
+    }
+    InMemoryNotificationsClient.prototype.notifyCustomerNoShow.call(notifications, b, now);
+  };
+  const detectionTime = apptTime + 15 * 60_000;
+
+  assert.throws(() => service.detect(booking.id, detectionTime), /notification service unavailable/);
+  assert.equal(payments.signals.length, 1, "payments should be signalled exactly once even though notification failed");
+  assert.equal(bookingRepository.findById(booking.id)?.status, "noshow", "booking stays no-show once payments has been signalled");
+
+  failCustomerNotification = false;
+  service.detect(booking.id, detectionTime + 1000);
+
+  assert.equal(payments.signals.length, 1, "retry must not re-signal payments");
+  const recipients = notifications.sent.map((n) => n.recipient).sort();
+  assert.deepEqual(recipients, ["customer", "provider"]);
+});

@@ -18,4 +18,6 @@ export interface Booking {
   cancellationConfirmedAt?: number;
   noShowDetectedAt?: number;
   financialOutcome?: FinancialOutcome;
+  customerNotifiedAt?: number;
+  providerNotifiedAt?: number;
 }
