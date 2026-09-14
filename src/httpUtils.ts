@@ -3,8 +3,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 const MAX_BODY_BYTES = 64 * 1024;
 
 export class PayloadTooLargeError extends Error {
-  constructor() {
-    super("Request body too large");
+  constructor(message = "Request body too large") {
+    super(message);
   }
 }
 
@@ -38,6 +38,33 @@ export function readJsonBody(req: IncomingMessage): Promise<unknown> {
       } catch {
         reject(new Error("Invalid JSON body"));
       }
+    });
+    req.on("error", reject);
+  });
+}
+
+export function readRawBody(req: IncomingMessage, maxBytes: number, tooLargeMessage?: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    let tooLarge = false;
+    req.on("data", (chunk: Buffer) => {
+      if (tooLarge) {
+        return;
+      }
+      totalBytes += chunk.length;
+      if (totalBytes > maxBytes) {
+        tooLarge = true;
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => {
+      if (tooLarge) {
+        reject(new PayloadTooLargeError(tooLargeMessage));
+        return;
+      }
+      resolve(Buffer.concat(chunks));
     });
     req.on("error", reject);
   });
