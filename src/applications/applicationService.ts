@@ -101,9 +101,7 @@ export class ApplicationService {
 
     if (NOTIFIED_TRANSITIONS.has(`${previousState}->${newState}`)) {
       const provider = this.userRepository.findById(application.providerId);
-      if (provider) {
-        await this.notificationService.notifyStateChange(application, provider.email);
-      }
+      await this.notificationService.notifyStateChange(application, provider?.email);
     }
 
     this.eventBus.publish(application.providerId, application);

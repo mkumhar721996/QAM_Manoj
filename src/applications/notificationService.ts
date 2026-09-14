@@ -44,7 +44,17 @@ export class NotificationService {
     this.maxAttempts = maxAttempts;
   }
 
-  async notifyStateChange(application: Application, providerEmail: string): Promise<void> {
+  async notifyStateChange(application: Application, providerEmail: string | undefined): Promise<void> {
+    if (!providerEmail) {
+      await this.adminAlertSender.raise({
+        applicationId: application.id,
+        providerId: application.providerId,
+        state: application.state,
+        error: "Provider not found: cannot send state-change notification email",
+      });
+      return;
+    }
+
     const subject = `Your application status has changed to ${application.state}`;
     const body =
       application.state === "rejected"

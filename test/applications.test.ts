@@ -343,6 +343,44 @@ test("AC13: a notification that fails on every retry attempt raises an admin ale
   }
 });
 
+test("AC13: a notified transition for a provider with no known email raises an admin alert instead of silently skipping notification", async () => {
+  const applicationRepository = new ApplicationRepository();
+  const sentEmails: Array<{ to: string; subject: string; body: string }> = [];
+  const emailSender: EmailSender = {
+    send: async (to, subject, body) => {
+      sentEmails.push({ to, subject, body });
+    },
+  };
+  const alerts: AdminAlert[] = [];
+  const adminAlertSender: AdminAlertSender = {
+    raise: async (alert) => {
+      alerts.push(alert);
+    },
+  };
+  const server = await startTestServer({ applicationRepository, emailSender, adminAlertSender });
+  try {
+    const adminToken = await loginAs(server.baseUrl, "admin1");
+    seedApplication(applicationRepository, {
+      id: "app-1",
+      providerId: "user-does-not-exist",
+      state: "submitted",
+    });
+
+    const res = await fetch(`${server.baseUrl}/applications/app-1/transition`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ state: "under_review" }),
+    });
+    assert.equal(res.status, 200);
+    assert.equal(sentEmails.length, 0);
+    assert.equal(alerts.length, 1);
+    assert.equal(alerts[0].applicationId, "app-1");
+    assert.equal(alerts[0].providerId, "user-does-not-exist");
+  } finally {
+    await server.close();
+  }
+});
+
 test("AC14: a corrected, resubmitted rejected application moves back to submitted", async () => {
   const applicationRepository = new ApplicationRepository();
   const credentialDocumentRepository = new CredentialDocumentRepository();
