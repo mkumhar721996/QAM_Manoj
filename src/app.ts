@@ -3,11 +3,34 @@ import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
 import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
+import { authenticateRequest } from "./auth/tokenService.ts";
 import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
+import { ApplicationRepository } from "./applications/applicationRepository.ts";
+import { CredentialDocumentRepository } from "./applications/credentialDocumentRepository.ts";
+import { ApplicationEventBus } from "./applications/applicationEventBus.ts";
+import {
+  ConsoleAdminAlertSender,
+  ConsoleEmailSender,
+  NotificationService,
+  type AdminAlertSender,
+  type EmailSender,
+} from "./applications/notificationService.ts";
+import { ApplicationService } from "./applications/applicationService.ts";
+import {
+  handleGetStatus,
+  handleStatusStream,
+  handleSubmit,
+  handleTransition,
+} from "./applications/applicationController.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
   sessionRepository?: SessionRepository;
+  applicationRepository?: ApplicationRepository;
+  credentialDocumentRepository?: CredentialDocumentRepository;
+  emailSender?: EmailSender;
+  adminAlertSender?: AdminAlertSender;
+  eventBus?: ApplicationEventBus;
 }
 
 export interface App {
@@ -19,19 +42,75 @@ export function createApp(deps: AppDependencies = {}): App {
   const sessionRepository = deps.sessionRepository ?? new SessionRepository();
   const authService = new AuthService(userRepository, sessionRepository);
 
+  const applicationRepository = deps.applicationRepository ?? new ApplicationRepository();
+  const credentialDocumentRepository = deps.credentialDocumentRepository ?? new CredentialDocumentRepository();
+  const emailSender = deps.emailSender ?? new ConsoleEmailSender();
+  const adminAlertSender = deps.adminAlertSender ?? new ConsoleAdminAlertSender();
+  const eventBus = deps.eventBus ?? new ApplicationEventBus();
+  const notificationService = new NotificationService(emailSender, adminAlertSender);
+  const applicationService = new ApplicationService(
+    applicationRepository,
+    credentialDocumentRepository,
+    notificationService,
+    eventBus,
+    userRepository,
+  );
+
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
-    void handleRequest(req, res, authService);
+    void handleRequest(req, res, authService, applicationService, eventBus);
   };
 
   return { requestListener };
 }
 
-async function handleRequest(req: IncomingMessage, res: ServerResponse, authService: AuthService): Promise<void> {
+async function handleRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  authService: AuthService,
+  applicationService: ApplicationService,
+  eventBus: ApplicationEventBus,
+): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
   const route = `${method} ${url.pathname}`;
 
+  const applicationMatch = url.pathname.match(
+    /^\/applications\/([^/]+)\/(submit|status|status\/stream|transition)$/,
+  );
+
   try {
+    if (applicationMatch) {
+      const [, applicationId, action] = applicationMatch;
+      const auth = authenticateRequest(req.headers.authorization);
+
+      if (method === "POST" && action === "submit") {
+        const result = handleSubmit(applicationService, applicationId, auth);
+        sendJson(res, result.status, result.body);
+        return;
+      }
+
+      if (method === "GET" && action === "status") {
+        const result = handleGetStatus(applicationService, applicationId, auth);
+        sendJson(res, result.status, result.body);
+        return;
+      }
+
+      if (method === "GET" && action === "status/stream") {
+        handleStatusStream(res, eventBus, applicationService, applicationId, auth);
+        return;
+      }
+
+      if (method === "POST" && action === "transition") {
+        const body = await readJsonBody(req);
+        const result = await handleTransition(applicationService, applicationId, auth, body);
+        sendJson(res, result.status, result.body);
+        return;
+      }
+
+      sendJson(res, 404, { error: "not found" });
+      return;
+    }
+
     if (route === "GET /auth/session") {
       const result = handleGetSession(req.headers.authorization);
       sendJson(res, result.status, result.body);

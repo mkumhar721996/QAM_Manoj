@@ -75,3 +75,11 @@ export function verifyAccessToken(token: string, now: number = Date.now()): Acce
 export function generateRefreshToken(): string {
   return crypto.randomBytes(48).toString("hex");
 }
+
+export function authenticateRequest(
+  authorizationHeader: string | undefined,
+  now: number = Date.now(),
+): AccessTokenPayload | null {
+  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
+  return token ? verifyAccessToken(token, now) : null;
+}
