@@ -30,11 +30,15 @@ export class NoShowPolicyRepository {
     return policy;
   }
 
-  currentVersion(id: string): NoShowPolicyVersion | undefined {
+  currentVersion(id: string, now: number): NoShowPolicyVersion | undefined {
     const policy = this.policiesById.get(id);
-    if (!policy || policy.versions.length === 0) {
+    if (!policy) {
       return undefined;
     }
-    return policy.versions[policy.versions.length - 1];
+    const applicable = policy.versions.filter((v) => v.effectiveFrom <= now);
+    if (applicable.length === 0) {
+      return undefined;
+    }
+    return applicable.reduce((latest, v) => (v.version > latest.version ? v : latest));
   }
 }

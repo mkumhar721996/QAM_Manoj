@@ -40,7 +40,7 @@ export class NoShowDetectionService {
       return booking;
     }
 
-    const policyVersion = booking.policyId ? this.policyRepository.currentVersion(booking.policyId) : undefined;
+    const policyVersion = booking.policyId ? this.policyRepository.currentVersion(booking.policyId, now) : undefined;
     const graceMs = (policyVersion?.gracePeriodMinutes ?? 0) * 60_000;
     if (now - booking.appointmentTime < graceMs) {
       return booking;
@@ -55,14 +55,51 @@ export class NoShowDetectionService {
         }
       : { type: "no_charge", amount: 0 };
 
+    // Mutate in-memory first so notifications carry the outcome, but roll back on
+    // failure so the booking stays "confirmed" and a later detect() call can retry.
+    const previousStatus = booking.status;
     booking.status = "noshow";
     booking.noShowDetectedAt = now;
     booking.financialOutcome = outcome;
-    this.bookingRepository.update(booking);
 
-    this.paymentsClient.signalNoShowOutcome({ bookingId: booking.id, outcome, signalledAt: now });
-    this.notificationsClient.notifyCustomerNoShow(booking, now);
-    this.notificationsClient.notifyProviderNoShow(booking, now);
+    const rollback = () => {
+      booking.status = previousStatus;
+      booking.noShowDetectedAt = undefined;
+      booking.financialOutcome = undefined;
+    };
+
+    try {
+      this.paymentsClient.signalNoShowOutcome({ bookingId: booking.id, outcome, signalledAt: now });
+    } catch (error) {
+      rollback();
+      console.error("no-show detection: payments signal failed", {
+        bookingId: booking.id,
+        callType: "payments",
+        error,
+      });
+      throw error;
+    }
+
+    try {
+      this.notificationsClient.notifyCustomerNoShow(booking, now);
+      this.notificationsClient.notifyProviderNoShow(booking, now);
+    } catch (error) {
+      rollback();
+      console.error("no-show detection: notification failed", {
+        bookingId: booking.id,
+        callType: "notification",
+        error,
+      });
+      throw error;
+    }
+
+    this.bookingRepository.update(booking);
+    console.info("no-show detection: booking marked no-show", {
+      bookingId: booking.id,
+      appointmentTime: booking.appointmentTime,
+      gracePeriodMinutes: policyVersion?.gracePeriodMinutes ?? 0,
+      financialOutcome: outcome,
+    });
 
     return booking;
   }

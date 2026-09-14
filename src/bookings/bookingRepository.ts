@@ -11,6 +11,9 @@ export class BookingRepository {
     appointmentTime: number;
     policyId?: string;
   }): Booking {
+    if (this.bookingsById.has(input.id)) {
+      throw new Error(`Booking already exists: ${input.id}`);
+    }
     const booking: Booking = {
       id: input.id,
       customerId: input.customerId,

@@ -174,3 +174,41 @@ test("AC13: the provider no-show notification includes the booking and customer 
   assert.equal(providerNotification?.payload.customerId, "cust-1");
   assert.equal(providerNotification?.payload.service, "Haircut");
 });
+
+test("a future-dated policy version does not govern detections before its effective date", () => {
+  const { bookingRepository, policyRepository, service } = createHarness();
+  const apptTime = Date.parse("2026-09-14T09:00:00Z");
+  policyRepository.create("standard-grace", { gracePeriodMinutes: 15, outcomeType: "fee", feeAmount: 22.5 }, apptTime - 1000);
+  policyRepository.addVersion("standard-grace", { gracePeriodMinutes: 15, outcomeType: "fee", feeAmount: 99 }, apptTime + 60 * 60_000);
+  const booking = bookingRepository.create({ id: "BKG-1", customerId: "cust-1", providerId: "prov-1", service: "Haircut", appointmentTime: apptTime, policyId: "standard-grace" });
+
+  const result = service.detect(booking.id, apptTime + 15 * 60_000);
+
+  assert.equal(result.financialOutcome?.amount, 22.5);
+  assert.equal(result.financialOutcome?.policyVersion, 1);
+});
+
+test("creating a booking with an id that already exists is rejected instead of silently overwriting it", () => {
+  const { bookingRepository } = createHarness();
+  bookingRepository.create({ id: "BKG-1", customerId: "cust-1", providerId: "prov-1", service: "Haircut", appointmentTime: Date.now() });
+
+  assert.throws(
+    () => bookingRepository.create({ id: "BKG-1", customerId: "cust-2", providerId: "prov-2", service: "Massage", appointmentTime: Date.now() }),
+    /Booking already exists/,
+  );
+});
+
+test("a failed payments signal leaves the booking confirmed so detection can be retried", () => {
+  const { bookingRepository, policyRepository, service } = createHarness();
+  const apptTime = Date.parse("2026-09-14T09:00:00Z");
+  policyRepository.create("standard-grace", { gracePeriodMinutes: 15, outcomeType: "fee", feeAmount: 22.5 }, apptTime - 1000);
+  const booking = bookingRepository.create({ id: "BKG-1", customerId: "cust-1", providerId: "prov-1", service: "Haircut", appointmentTime: apptTime, policyId: "standard-grace" });
+  const failingPayments = { signalNoShowOutcome: () => { throw new Error("payments unavailable"); } };
+  const service2 = new NoShowDetectionService(bookingRepository, policyRepository, failingPayments, new InMemoryNotificationsClient());
+
+  assert.throws(() => service2.detect(booking.id, apptTime + 15 * 60_000), /payments unavailable/);
+
+  const stored = bookingRepository.findById(booking.id);
+  assert.equal(stored?.status, "confirmed");
+  assert.equal(stored?.financialOutcome, undefined);
+});
