@@ -64,9 +64,10 @@ async function handleRequest(
     if (contentMatch) {
       const result = handleDownloadDocument(documentService, req.headers.authorization, contentMatch[1]);
       if (result.fileBuffer) {
+        const encodedFileName = encodeURIComponent(result.fileName ?? "");
         res.writeHead(result.status, {
           "Content-Type": result.contentType ?? "application/octet-stream",
-          "Content-Disposition": `attachment; filename="${result.fileName}"`,
+          "Content-Disposition": `attachment; filename*=UTF-8''${encodedFileName}`,
           "Content-Length": result.fileBuffer.length,
         });
         res.end(result.fileBuffer);
@@ -92,7 +93,7 @@ async function handleRequest(
       const rawBody = await readRawBody(
         req,
         MAX_DOCUMENT_SIZE_BYTES,
-        `File exceeds the ${MAX_DOCUMENT_SIZE_BYTES / (1024 * 1024)} MB size limit`,
+        `File exceeds the maximum size of ${MAX_DOCUMENT_SIZE_BYTES / (1024 * 1024)} MB`,
       );
       const result = handleUploadDocument(documentService, {
         authorizationHeader: req.headers.authorization,

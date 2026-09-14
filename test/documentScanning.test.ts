@@ -133,3 +133,20 @@ test("AC8: a failed document never appears in the review queue and is never down
     await server.close();
   }
 });
+
+test("a scanner error marks the document as failed instead of crashing the process", async () => {
+  const documentRepository = new DocumentRepository();
+  const failingScanner: MalwareScanner = { scan: () => Promise.reject(new Error("scanner unavailable")) };
+  const server = await startTestServer({ documentRepository, malwareScanner: failingScanner });
+  try {
+    const providerToken = await login(server.baseUrl, "provider1");
+    const id = await uploadPdf(server.baseUrl, providerToken);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.equal(documentRepository.findById(id)?.status, "failed");
+  } finally {
+    await server.close();
+  }
+});

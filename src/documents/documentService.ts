@@ -7,7 +7,7 @@ export const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
 
 export class UnsupportedFileFormatError extends Error {
   constructor() {
-    super("Only PDF, JPG, and PNG files are accepted");
+    super("Unsupported file format. Accepted formats: PDF, JPG, PNG");
   }
 }
 
@@ -34,9 +34,15 @@ export class DocumentService {
     }
 
     const doc = this.repository.create(providerId, fileName, contentType, content, now);
-    void this.scanner.scan({ buffer: content, fileName }).then((result) => {
-      this.repository.updateStatus(doc.id, result === "clean" ? "ready" : "failed");
-    });
+    void this.scanner
+      .scan({ buffer: content, fileName })
+      .then((result) => {
+        this.repository.updateStatus(doc.id, result === "clean" ? "ready" : "failed");
+      })
+      .catch((err) => {
+        console.error(`malware scan failed for document ${doc.id}:`, err);
+        this.repository.updateStatus(doc.id, "failed");
+      });
     return doc;
   }
 
