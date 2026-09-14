@@ -7,6 +7,7 @@ export interface User {
   username: string;
   passwordHash: string;
   role: Role;
+  name?: string;
 }
 
 export const TEST_PASSWORD = "test-password";

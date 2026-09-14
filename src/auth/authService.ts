@@ -1,6 +1,6 @@
 import { UserRepository } from "../users/userRepository.ts";
 import { SessionRepository } from "../sessions/sessionRepository.ts";
-import { DUMMY_PASSWORD_HASH, verifyPassword } from "./passwordHasher.ts";
+import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from "./passwordHasher.ts";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
   REFRESH_TOKEN_TTL_MS,
@@ -10,6 +10,7 @@ import {
 
 export const INVALID_CREDENTIALS_MESSAGE = "Invalid username or password";
 export const INVALID_REFRESH_TOKEN_MESSAGE = "Invalid or expired refresh token";
+export const EMAIL_ALREADY_REGISTERED_MESSAGE = "An account with this email already exists";
 
 export interface LoginResult {
   accessToken: string;
@@ -31,6 +32,12 @@ export class InvalidCredentialsError extends Error {
 export class InvalidRefreshTokenError extends Error {
   constructor() {
     super(INVALID_REFRESH_TOKEN_MESSAGE);
+  }
+}
+
+export class EmailAlreadyRegisteredError extends Error {
+  constructor() {
+    super(EMAIL_ALREADY_REGISTERED_MESSAGE);
   }
 }
 
@@ -82,6 +89,32 @@ export class AuthService {
     return {
       accessToken,
       accessTokenExpiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+    };
+  }
+
+  async register(name: string, email: string, password: string, now: number = Date.now()): Promise<LoginResult> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (this.userRepository.findByUsername(normalizedEmail)) {
+      throw new EmailAlreadyRegisteredError();
+    }
+
+    const passwordHash = await hashPassword(password);
+    const user = this.userRepository.create({
+      username: normalizedEmail,
+      passwordHash,
+      role: "provider",
+      name: name.trim(),
+    });
+
+    const refreshToken = generateRefreshToken();
+    this.sessionRepository.create(user.id, refreshToken, REFRESH_TOKEN_TTL_MS, now);
+
+    const accessToken = issueAccessToken({ userId: user.id, role: user.role }, now);
+
+    return {
+      accessToken,
+      accessTokenExpiresInSeconds: ACCESS_TOKEN_TTL_SECONDS,
+      refreshToken,
     };
   }
 
