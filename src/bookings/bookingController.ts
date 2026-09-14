@@ -8,14 +8,21 @@ import type { ControllerResponse } from "../auth/authController.ts";
 export async function handleConfirmBooking(
   bookingService: BookingService,
   requestBody: unknown,
+  authorizationHeader: string | undefined,
+  now: number = Date.now(),
 ): Promise<ControllerResponse> {
+  const payload = verifyAccessToken(extractBearerToken(authorizationHeader) ?? "", now);
+  if (!payload) {
+    return { status: 401, body: { error: "missing or invalid access token" } };
+  }
+
   const { hold_id: holdId } = asRecord(requestBody);
   if (typeof holdId !== "string") {
     return { status: 400, body: { error: "hold_id is required" } };
   }
 
   try {
-    const booking = bookingService.confirmHold(holdId);
+    const booking = bookingService.confirmHold(holdId, payload.userId, now);
     return { status: 201, body: { booking: toBookingResponse(booking) } };
   } catch (err) {
     if (err instanceof HoldExpiredError) {

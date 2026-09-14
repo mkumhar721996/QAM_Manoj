@@ -89,7 +89,7 @@ async function handleRequest(
     }
 
     if (route === "POST /bookings/confirm") {
-      const result = await handleConfirmBooking(bookingService, body);
+      const result = await handleConfirmBooking(bookingService, body, req.headers.authorization);
       sendJson(res, result.status, result.body);
       return;
     }

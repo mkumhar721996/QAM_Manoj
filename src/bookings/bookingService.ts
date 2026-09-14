@@ -34,10 +34,10 @@ export class BookingService {
     this.userRepository = userRepository;
   }
 
-  confirmHold(holdId: string, now: number = Date.now()): Booking {
+  confirmHold(holdId: string, requestingCustomerId: string, now: number = Date.now()): Booking {
     const hold = this.holdRepository.findById(holdId);
     const slot = hold ? this.slotRepository.findById(hold.slotId) : undefined;
-    if (!hold || !slot) {
+    if (!hold || !slot || hold.customerId !== requestingCustomerId) {
       throw new HoldNotFoundError();
     }
 

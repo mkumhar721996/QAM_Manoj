@@ -29,10 +29,11 @@ async function setupConfirmedBooking(server: TestServer, holdRepository: HoldRep
     status: "held",
   });
   const hold = holdRepository.create(slot.id, "user-customer-1", HOLD_TTL_MS);
+  const accessToken = await loginAs(server, "customer1");
 
   await fetch(`${server.baseUrl}/bookings/confirm`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ hold_id: hold.id }),
   });
 }

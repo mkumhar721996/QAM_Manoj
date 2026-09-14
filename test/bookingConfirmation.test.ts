@@ -1,12 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { startTestServer } from "./testServer.ts";
+import type { TestServer } from "./testServer.ts";
+import { TEST_PASSWORD } from "../src/users/fixtures/testUsers.ts";
 import { SlotRepository } from "../src/bookings/slotRepository.ts";
 import { HoldRepository } from "../src/bookings/holdRepository.ts";
 import { BookingRepository } from "../src/bookings/bookingRepository.ts";
 import type { Slot } from "../src/bookings/slotModel.ts";
 
 const HOLD_TTL_MS = 10 * 60 * 1000;
+
+async function loginAs(server: TestServer, username: string): Promise<string> {
+  const res = await fetch(`${server.baseUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password: TEST_PASSWORD }),
+  });
+  const body = (await res.json()) as { access_token: string };
+  return body.access_token;
+}
 
 function seedHeldSlot(slotRepository: SlotRepository): Slot {
   return slotRepository.create({
@@ -27,10 +39,11 @@ test("AC1 & AC2: confirming a valid hold creates a confirmed booking and marks t
   try {
     const slot = seedHeldSlot(slotRepository);
     const hold = holdRepository.create(slot.id, "user-customer-1", HOLD_TTL_MS);
+    const accessToken = await loginAs(server, "customer1");
 
     const res = await fetch(`${server.baseUrl}/bookings/confirm`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ hold_id: hold.id }),
     });
 
@@ -53,10 +66,11 @@ test("AC5, AC6 & AC7: confirming an expired hold is rejected, the slot is releas
     const slot = seedHeldSlot(slotRepository);
     const elevenMinutesAgo = Date.now() - 11 * 60 * 1000;
     const hold = holdRepository.create(slot.id, "user-customer-1", HOLD_TTL_MS, elevenMinutesAgo);
+    const accessToken = await loginAs(server, "customer1");
 
     const res = await fetch(`${server.baseUrl}/bookings/confirm`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ hold_id: hold.id }),
     });
 
@@ -65,6 +79,52 @@ test("AC5, AC6 & AC7: confirming an expired hold is rejected, the slot is releas
     assert.match(body.error, /select a new slot/i);
     assert.equal(bookingRepository.findByCustomerId("user-customer-1").length, 0);
     assert.equal(slotRepository.findById(slot.id)!.status, "available");
+  } finally {
+    await server.close();
+  }
+});
+
+test("a customer cannot confirm another customer's hold", async () => {
+  const slotRepository = new SlotRepository();
+  const holdRepository = new HoldRepository();
+  const bookingRepository = new BookingRepository();
+  const server = await startTestServer({ slotRepository, holdRepository, bookingRepository });
+  try {
+    const slot = seedHeldSlot(slotRepository);
+    const hold = holdRepository.create(slot.id, "user-customer-1", HOLD_TTL_MS);
+    const accessToken = await loginAs(server, "provider1");
+
+    const res = await fetch(`${server.baseUrl}/bookings/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ hold_id: hold.id }),
+    });
+
+    assert.equal(res.status, 404);
+    assert.equal(bookingRepository.findByCustomerId("user-customer-1").length, 0);
+    assert.equal(slotRepository.findById(slot.id)!.status, "held");
+  } finally {
+    await server.close();
+  }
+});
+
+test("confirming a hold without an access token is rejected", async () => {
+  const slotRepository = new SlotRepository();
+  const holdRepository = new HoldRepository();
+  const bookingRepository = new BookingRepository();
+  const server = await startTestServer({ slotRepository, holdRepository, bookingRepository });
+  try {
+    const slot = seedHeldSlot(slotRepository);
+    const hold = holdRepository.create(slot.id, "user-customer-1", HOLD_TTL_MS);
+
+    const res = await fetch(`${server.baseUrl}/bookings/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hold_id: hold.id }),
+    });
+
+    assert.equal(res.status, 401);
+    assert.equal(bookingRepository.findByCustomerId("user-customer-1").length, 0);
   } finally {
     await server.close();
   }
