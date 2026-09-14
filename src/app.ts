@@ -3,9 +3,9 @@ import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
 import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
-import { PayloadTooLargeError, readJsonBody, readRawBody, sendJson } from "./httpUtils.ts";
+import { PayloadTooLargeError, readJsonBody, readRawBody, sendJson, toSingleHeaderValue } from "./httpUtils.ts";
 import { DocumentRepository } from "./documents/documentRepository.ts";
-import { StubMalwareScanner } from "./documents/malwareScanner.ts";
+import { createDefaultMalwareScanner } from "./documents/malwareScanner.ts";
 import type { MalwareScanner } from "./documents/malwareScanner.ts";
 import { DocumentService, MAX_DOCUMENT_SIZE_BYTES } from "./documents/documentService.ts";
 import {
@@ -32,7 +32,7 @@ export function createApp(deps: AppDependencies = {}): App {
   const userRepository = deps.userRepository ?? new UserRepository();
   const sessionRepository = deps.sessionRepository ?? new SessionRepository();
   const documentRepository = deps.documentRepository ?? new DocumentRepository();
-  const malwareScanner = deps.malwareScanner ?? new StubMalwareScanner();
+  const malwareScanner = deps.malwareScanner ?? createDefaultMalwareScanner();
   const authService = new AuthService(userRepository, sessionRepository);
   const documentService = new DocumentService(documentRepository, malwareScanner);
 
@@ -97,8 +97,8 @@ async function handleRequest(
       );
       const result = handleUploadDocument(documentService, {
         authorizationHeader: req.headers.authorization,
-        contentType: req.headers["content-type"],
-        fileName: req.headers["x-file-name"] as string | undefined,
+        contentType: toSingleHeaderValue(req.headers["content-type"]),
+        fileName: toSingleHeaderValue(req.headers["x-file-name"]),
         body: rawBody,
       });
       sendJson(res, result.status, result.body);

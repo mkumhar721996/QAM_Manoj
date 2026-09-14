@@ -4,6 +4,26 @@ import { startTestServer } from "./testServer.ts";
 import { TEST_PASSWORD } from "../src/users/fixtures/testUsers.ts";
 import { DocumentRepository } from "../src/documents/documentRepository.ts";
 import type { MalwareScanner } from "../src/documents/malwareScanner.ts";
+import { toSingleHeaderValue } from "../src/httpUtils.ts";
+import { createDefaultMalwareScanner } from "../src/documents/malwareScanner.ts";
+
+function withNodeEnv(value: string | undefined, fn: () => void): void {
+  const previous = process.env.NODE_ENV;
+  if (value === undefined) {
+    delete process.env.NODE_ENV;
+  } else {
+    process.env.NODE_ENV = value;
+  }
+  try {
+    fn();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previous;
+    }
+  }
+}
 
 function pendingScanner(): MalwareScanner {
   return { scan: () => new Promise(() => {}) };
@@ -18,6 +38,24 @@ async function login(baseUrl: string, username: string): Promise<string> {
   const body = (await res.json()) as { access_token: string };
   return body.access_token;
 }
+
+test("a repeated X-File-Name header (parsed as an array) is rejected rather than silently coerced to a joined string", () => {
+  assert.equal(toSingleHeaderValue(["license.pdf", "resume.pdf"]), undefined);
+  assert.equal(toSingleHeaderValue("license.pdf"), "license.pdf");
+  assert.equal(toSingleHeaderValue(undefined), undefined);
+});
+
+test("the default malware scanner refuses to start in production without a real scanner injected", () => {
+  withNodeEnv("production", () => {
+    assert.throws(() => createDefaultMalwareScanner());
+  });
+});
+
+test("the default malware scanner is available for non-production use", () => {
+  withNodeEnv("test", () => {
+    assert.doesNotThrow(() => createDefaultMalwareScanner());
+  });
+});
 
 test("AC1: a PDF under 10 MB is accepted and queued for scanning", async () => {
   const documentRepository = new DocumentRepository();

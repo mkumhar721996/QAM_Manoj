@@ -70,6 +70,10 @@ export function readRawBody(req: IncomingMessage, maxBytes: number, tooLargeMess
   });
 }
 
+export function toSingleHeaderValue(header: string | string[] | undefined): string | undefined {
+  return typeof header === "string" ? header : undefined;
+}
+
 export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
