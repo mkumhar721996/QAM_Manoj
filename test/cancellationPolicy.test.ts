@@ -22,7 +22,9 @@ test("AC1: a saved threshold is applied to subsequent cancellation evaluations",
     const service = new CancellationPolicyService(cancellationPolicyRepository);
     const appointmentTime = Date.parse("2026-01-10T12:00:00Z");
     const cancellationTime = Date.parse("2026-01-09T10:00:00Z"); // 26h before
-    assert.equal(service.evaluateCancellation(appointmentTime, cancellationTime).outcome, "full_refund");
+    const evaluation = service.evaluateCancellation(appointmentTime, cancellationTime);
+    assert.equal(evaluation.outcome, "full_refund");
+    assert.notEqual(evaluation.tierId, null);
   } finally {
     await server.close();
   }
