@@ -73,11 +73,30 @@ test("AC4: absence of a configured policy is surfaced to administrators", async 
   const server = await startTestServer();
   const warnSpy = mock.method(console, "warn");
   try {
-    await fetch(`${server.baseUrl}/no-show-policy/resolve`, { method: "POST" });
+    const res = await fetch(`${server.baseUrl}/no-show-policy/resolve`, { method: "POST" });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { outcome: string; configured: boolean };
+    assert.equal(body.outcome, "no_charge");
+    assert.equal(body.configured, false);
+
     const warned = warnSpy.mock.calls.some((call) => /no configured no-show policy/.test(String(call.arguments[0])));
     assert.equal(warned, true);
   } finally {
     warnSpy.mock.restore();
+    await server.close();
+  }
+});
+
+test("AC4: GET /no-show-policy also reports the absence of a configured policy to administrators", async () => {
+  const server = await startTestServer();
+  try {
+    const { access_token: adminToken } = await login(server.baseUrl, "admin1");
+    const res = await fetch(`${server.baseUrl}/no-show-policy`, { headers: { Authorization: `Bearer ${adminToken}` } });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { configured: boolean; outcome: string };
+    assert.equal(body.configured, false);
+    assert.equal(body.outcome, "no_charge");
+  } finally {
     await server.close();
   }
 });

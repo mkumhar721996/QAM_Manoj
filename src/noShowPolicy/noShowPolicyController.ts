@@ -28,7 +28,7 @@ export function handleGetNoShowPolicy(
   if ("status" in admin) return admin;
 
   const policy = service.getPolicy();
-  return { status: 200, body: policy ? { ...policy } : { configured: false } };
+  return { status: 200, body: policy ? { configured: true, ...policy } : { configured: false, outcome: "no_charge" } };
 }
 
 export function handleUpdateNoShowPolicy(
