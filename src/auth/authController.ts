@@ -1,12 +1,8 @@
 import type { AuthService } from "./authService.ts";
 import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
 import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
-import { asRecord } from "../httpUtils.ts";
-
-export interface ControllerResponse {
-  status: number;
-  body?: Record<string, unknown>;
-}
+import { asRecord, extractBearerToken } from "../httpUtils.ts";
+import type { ControllerResponse } from "../httpUtils.ts";
 
 export async function handleLogin(authService: AuthService, requestBody: unknown): Promise<ControllerResponse> {
   const { username, password } = asRecord(requestBody);
@@ -76,7 +72,7 @@ export function handleLogout(authService: AuthService, requestBody: unknown): Co
 }
 
 export function handleGetSession(authorizationHeader: string | undefined, now: number = Date.now()): ControllerResponse {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
+  const token = extractBearerToken(authorizationHeader);
 
   if (!token) {
     console.warn("session lookup failed: missing or malformed authorization header");

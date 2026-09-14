@@ -2,6 +2,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 const MAX_BODY_BYTES = 64 * 1024;
 
+export interface ControllerResponse {
+  status: number;
+  body?: Record<string, unknown>;
+}
+
 export class PayloadTooLargeError extends Error {
   constructor() {
     super("Request body too large");
@@ -41,6 +46,10 @@ export function readJsonBody(req: IncomingMessage): Promise<unknown> {
     });
     req.on("error", reject);
   });
+}
+
+export function extractBearerToken(authorizationHeader: string | undefined): string | undefined {
+  return authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
 }
 
 export function asRecord(value: unknown): Record<string, unknown> {
