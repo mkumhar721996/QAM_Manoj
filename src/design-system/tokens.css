@@ -1,0 +1,51 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --color-fg: [object Object]; /** Default body text color on color-bg. Passes WCAG AA (>7:1) for normal text. */
+  --color-bg: [object Object]; /** Default page/surface background. */
+  --color-surface: [object Object]; /** Slightly recessed surface, used for chips and inputs. */
+  --color-fg-muted: [object Object]; /** Secondary text, e.g. helper text and captions. */
+  --color-primary: [object Object]; /** Brand primary, used for primary actions and emphasis. */
+  --color-primary-hover: [object Object]; /** Hover/active state of color-primary. */
+  --color-primary-fg: [object Object]; /** Text/icon color on top of color-primary. */
+  --color-border: [object Object]; /** Default hairline border for cards, inputs, and dividers. */
+  --color-danger: [object Object]; /** Destructive actions and error states. */
+  --space-1: [object Object]; /** Smallest spacing increment. */
+  --space-2: [object Object];
+  --space-3: [object Object];
+  --space-4: [object Object];
+  --radius-sm: [object Object]; /** Chips, small controls. */
+  --radius-md: [object Object]; /** Buttons, inputs. */
+  --radius-lg: [object Object]; /** Cards, modals. */
+  --font-size-sm: [object Object];
+  --font-size-md: [object Object];
+  --font-size-lg: [object Object];
+  --border-width-default: [object Object];
+  --font-family-base: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-bold: 600;
+  --line-height-base: 1.5;
+  --shadow-sm: [object Object] [object Object] [object Object] [object Object] [object Object]; /** Resting elevation for cards. */
+  --border-default: var(--color-border) solid var(--border-width-default); /** Composite hairline border used by cards and inputs. */
+  --button-primary-background: var(--color-primary);
+  --button-primary-background-hover: var(--color-primary-hover);
+  --button-primary-foreground: var(--color-primary-fg);
+  --button-primary-radius: var(--radius-md);
+  --button-secondary-background: var(--color-bg);
+  --button-secondary-foreground: var(--color-primary);
+  --button-secondary-border: var(--color-border);
+  --button-secondary-radius: var(--radius-md);
+  --card-default-background: var(--color-bg);
+  --card-default-border: var(--color-border);
+  --card-default-radius: var(--radius-lg);
+  --card-default-padding: var(--space-4);
+  --chip-default-background: var(--color-surface);
+  --chip-default-foreground: var(--color-fg-muted);
+  --chip-default-radius: var(--radius-sm);
+  --input-default-background: var(--color-bg);
+  --input-default-border: var(--color-border);
+  --input-default-radius: var(--radius-md);
+  --input-default-foreground: var(--color-fg);
+}

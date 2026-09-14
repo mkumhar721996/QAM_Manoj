@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Design System — Style Guide</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./prototype-utils.css" />
+<style>
+  /* Page scaffolding only — no design values are hardcoded here beyond layout chrome. */
+  .sg-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--space-4);
+  }
+  .sg-section {
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: var(--border-width-default) solid var(--color-border);
+  }
+  .sg-section h2 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+  }
+  .sg-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--space-3);
+  }
+  .sg-swatch {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .sg-swatch-color {
+    height: 64px;
+    border-radius: var(--radius-md);
+    border: var(--border-width-default) solid var(--color-border);
+  }
+  .sg-swatch-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-fg-muted);
+  }
+  .sg-swatch-label code {
+    color: var(--color-fg);
+  }
+  .sg-dimension-bar {
+    background: var(--color-primary);
+  }
+  .sg-radius-box {
+    width: 64px;
+    height: 64px;
+    background: var(--color-surface);
+    border: var(--border-width-default) solid var(--color-border);
+  }
+  .sg-type-sample {
+    color: var(--color-fg);
+  }
+</style>
+</head>
+<body>
+<div class="sg-page stack">
+
+  <header class="sg-section">
+    <h1>Design System Style Guide</h1>
+    <p class="text-muted">Every token from <code>tokens.json</code> (rendered as CSS custom properties in <code>tokens.css</code>) and every utility/component class from <code>prototype-utils.css</code>.</p>
+  </header>
+
+  <!-- Colors -->
+  <section class="sg-section">
+    <h2>Colors</h2>
+    <div class="sg-grid">
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-fg);"></div>
+        <span class="sg-swatch-label"><code>color-fg</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-bg);"></div>
+        <span class="sg-swatch-label"><code>color-bg</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-surface);"></div>
+        <span class="sg-swatch-label"><code>color-surface</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-fg-muted);"></div>
+        <span class="sg-swatch-label"><code>color-fg-muted</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-primary);"></div>
+        <span class="sg-swatch-label"><code>color-primary</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-primary-hover);"></div>
+        <span class="sg-swatch-label"><code>color-primary-hover</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-primary-fg); border: var(--border-width-default) solid var(--color-border);"></div>
+        <span class="sg-swatch-label"><code>color-primary-fg</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-border);"></div>
+        <span class="sg-swatch-label"><code>color-border</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--color-danger);"></div>
+        <span class="sg-swatch-label"><code>color-danger</code></span>
+      </div>
+    </div>
+    <p class="text-sm text-muted">
+      <code>color-fg</code> on <code>color-bg</code> meets WCAG AA (4.5:1) for normal text — see sample below.
+    </p>
+    <p class="sg-type-sample" style="background: var(--color-bg); padding: var(--space-2);">
+      The quick brown fox jumps over the lazy dog.
+    </p>
+  </section>
+
+  <!-- Spacing -->
+  <section class="sg-section">
+    <h2>Spacing</h2>
+    <div class="stack gap-2">
+      <div class="row gap-2">
+        <span class="sg-dimension-bar" style="width: var(--space-1); height: 16px;"></span>
+        <code>space-1</code>
+      </div>
+      <div class="row gap-2">
+        <span class="sg-dimension-bar" style="width: var(--space-2); height: 16px;"></span>
+        <code>space-2</code>
+      </div>
+      <div class="row gap-2">
+        <span class="sg-dimension-bar" style="width: var(--space-3); height: 16px;"></span>
+        <code>space-3</code>
+      </div>
+      <div class="row gap-2">
+        <span class="sg-dimension-bar" style="width: var(--space-4); height: 16px;"></span>
+        <code>space-4</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- Radius -->
+  <section class="sg-section">
+    <h2>Corner Radius</h2>
+    <div class="row gap-3">
+      <div class="sg-swatch">
+        <div class="sg-radius-box" style="border-radius: var(--radius-sm);"></div>
+        <span class="sg-swatch-label"><code>radius-sm</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-radius-box" style="border-radius: var(--radius-md);"></div>
+        <span class="sg-swatch-label"><code>radius-md</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-radius-box" style="border-radius: var(--radius-lg);"></div>
+        <span class="sg-swatch-label"><code>radius-lg</code></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Typography -->
+  <section class="sg-section">
+    <h2>Typography</h2>
+    <div class="stack gap-2">
+      <p class="sg-type-sample" style="font-size: var(--font-size-sm);"><code>font-size-sm</code> — The quick brown fox</p>
+      <p class="sg-type-sample" style="font-size: var(--font-size-md);"><code>font-size-md</code> — The quick brown fox</p>
+      <p class="sg-type-sample" style="font-size: var(--font-size-lg);"><code>font-size-lg</code> — The quick brown fox</p>
+      <p class="sg-type-sample" style="font-weight: var(--font-weight-regular);"><code>font-weight-regular</code> — The quick brown fox</p>
+      <p class="sg-type-sample" style="font-weight: var(--font-weight-bold);"><code>font-weight-bold</code> — The quick brown fox</p>
+      <p class="sg-type-sample" style="font-family: var(--font-family-base);"><code>font-family-base</code> — The quick brown fox</p>
+      <p class="sg-type-sample" style="line-height: var(--line-height-base);"><code>line-height-base</code> — Line one of a longer paragraph that wraps onto a second line so the line height is visible in practice.</p>
+    </div>
+  </section>
+
+  <!-- Shadows & Borders -->
+  <section class="sg-section">
+    <h2>Shadows &amp; Borders</h2>
+    <div class="row gap-4">
+      <div class="sg-swatch">
+        <div class="sg-radius-box" style="box-shadow: var(--shadow-sm); border: none;"></div>
+        <span class="sg-swatch-label"><code>shadow-sm</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-radius-box" style="border: var(--border-default); background: var(--color-bg);"></div>
+        <span class="sg-swatch-label"><code>border-default</code></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Component alias tokens -->
+  <section class="sg-section">
+    <h2>Component Alias Tokens</h2>
+    <div class="sg-grid">
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--button-primary-background);"></div>
+        <span class="sg-swatch-label"><code>button.primary.background</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--button-primary-background-hover);"></div>
+        <span class="sg-swatch-label"><code>button.primary.background-hover</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--button-primary-foreground); border: var(--border-width-default) solid var(--color-border);"></div>
+        <span class="sg-swatch-label"><code>button.primary.foreground</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--button-secondary-background); border: var(--border-width-default) solid var(--color-border);"></div>
+        <span class="sg-swatch-label"><code>button.secondary.background</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--button-secondary-foreground);"></div>
+        <span class="sg-swatch-label"><code>button.secondary.foreground</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--button-secondary-border);"></div>
+        <span class="sg-swatch-label"><code>button.secondary.border</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--card-default-background); border: var(--border-width-default) solid var(--color-border);"></div>
+        <span class="sg-swatch-label"><code>card.default.background</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--card-default-border);"></div>
+        <span class="sg-swatch-label"><code>card.default.border</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--chip-default-background); border: var(--border-width-default) solid var(--color-border);"></div>
+        <span class="sg-swatch-label"><code>chip.default.background</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--chip-default-foreground);"></div>
+        <span class="sg-swatch-label"><code>chip.default.foreground</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--input-default-background); border: var(--border-width-default) solid var(--color-border);"></div>
+        <span class="sg-swatch-label"><code>input.default.background</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--input-default-border);"></div>
+        <span class="sg-swatch-label"><code>input.default.border</code></span>
+      </div>
+      <div class="sg-swatch">
+        <div class="sg-swatch-color" style="background: var(--input-default-foreground);"></div>
+        <span class="sg-swatch-label"><code>input.default.foreground</code></span>
+      </div>
+    </div>
+    <p class="text-sm text-muted">
+      Radii: <code>button.primary.radius</code>, <code>button.secondary.radius</code>,
+      <code>card.default.radius</code>, <code>chip.default.radius</code>, <code>input.default.radius</code>
+      and spacing token <code>card.default.padding</code> are demonstrated live in the components below.
+    </p>
+  </section>
+
+  <!-- Components -->
+  <section class="sg-section">
+    <h2>Components</h2>
+
+    <h3>Buttons</h3>
+    <div class="row gap-2">
+      <button class="btn btn-primary">Primary action</button>
+      <button class="btn btn-secondary">Secondary action</button>
+    </div>
+
+    <h3>Card</h3>
+    <div class="card" style="max-width: 320px;">
+      <h4 class="card-title">Card title</h4>
+      <p class="card-body">Card body copy built entirely from <code>card.default.*</code> alias tokens and the <code>shadow-sm</code> composite token.</p>
+    </div>
+
+    <h3>Chips</h3>
+    <div class="row gap-2">
+      <span class="chip">Default chip</span>
+      <span class="chip">Another chip</span>
+    </div>
+
+    <h3>Form controls</h3>
+    <div class="stack gap-2" style="max-width: 320px;">
+      <div>
+        <label class="form-label" for="sg-input-name">Name</label>
+        <input class="form-control" id="sg-input-name" type="text" placeholder="Jane Doe" />
+      </div>
+    </div>
+
+  </section>
+
+</div>
+</body>
+</html>
