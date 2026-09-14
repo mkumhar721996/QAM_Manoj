@@ -83,12 +83,23 @@ scope:
         password?: string;
       }
 
+      function validateNewCredential(credential: unknown): string | undefined {
+        if (typeof credential !== "string" || credential.length === 0) {
+          return "Password is required";
+        }
+        if (credential.length < 8) {
+          return "Password must be at least 8 characters";
+        }
+        return undefined;
+      }
+
       export function validateRegistrationInput(input: {
         name: unknown;
         email: unknown;
         password: unknown;
       }): RegistrationErrors {
         const errors: RegistrationErrors = {};
+        const credentialMessage = validateNewCredential(input.password);
         if (typeof input.name !== "string" || input.name.trim().length === 0) {
           errors.name = "Name is required";
         }
@@ -97,10 +108,8 @@ scope:
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) {
           errors.email = "Enter a valid email address";
         }
-        if (typeof input.password !== "string" || input.password.length === 0) {
-          errors.password = "Password is required";
-        } else if (input.password.length < 8) {
-          errors.password = "Password must be at least 8 characters";
+        if (credentialMessage) {
+          errors.password = credentialMessage;
         }
         return errors;
       }
@@ -239,7 +248,7 @@ tests:
     const res = await fetch(`${server.baseUrl}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Ada Provider", email: "ada@example.com", password: "correct-horse-1" }),
+      body: JSON.stringify({ name: "Ada Provider", email: "ada@example.com", password: "test-password-1" }),
     });
     assert.equal(res.status, 201);
     const created = userRepository.findByUsername("ada@example.com");
