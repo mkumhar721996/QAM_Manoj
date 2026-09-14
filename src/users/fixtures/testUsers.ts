@@ -14,6 +14,9 @@ export const TEST_PASSWORD = "test-password";
 const testUserSeeds: Array<Omit<User, "passwordHash">> = [
   { id: "user-customer-1", username: "customer1", role: "customer" },
   { id: "user-provider-1", username: "provider1", role: "provider" },
+  { id: "user-provider-2", username: "provider2", role: "provider" },
+  { id: "user-provider-3", username: "provider3", role: "provider" },
+  { id: "user-provider-4", username: "provider4", role: "provider" },
   { id: "user-admin-1", username: "admin1", role: "admin" },
 ];
 
