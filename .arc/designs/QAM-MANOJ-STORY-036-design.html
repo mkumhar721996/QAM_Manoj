@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QAM-MANOJ-STORY-036 · No-Show Auto-Detection &amp; Enforcement — Design Prototype</title>
+<style>
+/* =========================================================================
+   DESIGN SYSTEM — PROPOSAL AWAITING REVIEW
+   This project has no established design system yet. The tokens below are a
+   proposed visual language for the booking-ops console (scheduling / no-show
+   handling / payments signalling). If approved by stakeholders, this block
+   becomes the seed for a shared tokens.css. Every color, spacing, radius and
+   font value used anywhere in this document is a var() reference into this
+   block — nothing is hardcoded outside of :root.
+   ========================================================================= */
+:root {
+  /* Color: neutrals */
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-sunken: #eef1f4;
+  --border: #dde3e8;
+  --fg: #16212b;
+  --muted: #5c6b78;
+
+  /* Color: brand */
+  --brand: #0f6e63;
+  --brand-hover: #0c584f;
+  --brand-fg: #ffffff;
+  --brand-tint: #e3f3f0;
+
+  /* Color: semantic */
+  --success: #1c7c4d;
+  --success-bg: #e3f5ea;
+  --warning: #93650a;
+  --warning-bg: #fdf1da;
+  --danger: #b3261e;
+  --danger-bg: #fbe7e5;
+  --info: #2b5f8a;
+  --info-bg: #e6f0f8;
+  --neutral-bg: #eaedf0;
+
+  /* Typography */
+  --font-family-base: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', Roboto, sans-serif;
+  --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --text-xs: 0.72rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --weight-regular: 400;
+  --weight-medium: 600;
+  --weight-bold: 700;
+  --leading: 1.5;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Radii & shadow */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 32, 0.07);
+  --shadow-md: 0 6px 20px rgba(16, 24, 32, 0.10);
+
+  /* Layout */
+  --reviewer-bar-h: 52px;
+  --sidebar-w: 216px;
+}
+
+* , *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-family-base);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading);
+}
+
+h1, h2, h3, h4 { margin: 0; font-weight: var(--weight-bold); }
+p { margin: 0; }
+button { font-family: inherit; }
+
+/* ---------- Reviewer bar (canonical scaffold, always present) ---------- */
+.reviewer-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--reviewer-bar-h);
+  background: var(--fg);
+  color: var(--brand-fg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0 var(--space-4);
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-sm);
+}
+.reviewer-bar .rb-title {
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+  opacity: 0.92;
+}
+.reviewer-bar .rb-spacer { flex: 1; }
+.reviewer-bar .rb-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.reviewer-bar button.rb-btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: var(--brand-fg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+.reviewer-bar button.rb-btn:hover { background: rgba(255,255,255,0.22); }
+.reviewer-bar button.rb-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.reviewer-bar .rb-label {
+  min-width: 230px;
+  text-align: center;
+  font-weight: var(--weight-medium);
+}
+.reviewer-bar .rb-jump { display: flex; gap: var(--space-1); }
+.reviewer-bar .rb-jump button {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.75);
+  border-radius: var(--radius-full);
+  width: 24px; height: 24px;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.reviewer-bar .rb-jump button.active {
+  background: var(--brand-fg);
+  color: var(--fg);
+  border-color: var(--brand-fg);
+  font-weight: var(--weight-bold);
+}
+
+/* ---------- App shell ---------- */
+.app-shell {
+  display: flex;
+  margin-top: var(--reviewer-bar-h);
+  min-height: calc(100vh - var(--reviewer-bar-h));
+}
+
+/* Project nav placeholder: represents the eventual booking-ops console IA.
+   This is NOT part of the reviewer scaffold — it is a stand-in for the
+   product's own navigation so reviewers can judge the feature in context. */
+.app-nav {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: var(--space-5) var(--space-3);
+}
+.app-nav .brand {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--brand);
+  padding: 0 var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.app-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.app-nav button.nav-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  cursor: pointer;
+}
+.app-nav button.nav-item:hover { background: var(--surface-sunken); color: var(--fg); }
+.app-nav button.nav-item.active { background: var(--brand-tint); color: var(--brand); font-weight: var(--weight-medium); }
+
+.main {
+  flex: 1;
+  padding: var(--space-6);
+  max-width: 1180px;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+.page-head { margin-bottom: var(--space-5); }
+.page-head .eyebrow {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brand);
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-1);
+}
+.page-head h1 { font-size: var(--text-2xl); margin-bottom: var(--space-2); }
+.page-head .desc { color: var(--muted); font-size: var(--text-sm); max-width: 760px; }
+
+/* ---------- Generic components ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+.card + .card { margin-top: var(--space-4); }
+.card-title { font-size: var(--text-lg); margin-bottom: var(--space-3); }
+.card-title .sub { display:block; font-size: var(--text-sm); color: var(--muted); font-weight: var(--weight-regular); margin-top: 2px; }
+
+.grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-4); align-items: start; }
+.stack { display: flex; flex-direction: column; gap: var(--space-3); }
+.row { display: flex; align-items: center; gap: var(--space-2); }
+.row.between { justify-content: space-between; }
+.row.wrap { flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color .15s ease, border-color .15s ease, opacity .15s ease;
+}
+.btn-primary { background: var(--brand); color: var(--brand-fg); }
+.btn-primary:hover { background: var(--brand-hover); }
+.btn-secondary { background: var(--surface); color: var(--brand); border-color: var(--border); }
+.btn-secondary:hover { background: var(--surface-sunken); }
+.btn-danger { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: var(--brand-fg); }
+.btn-ghost { background: transparent; color: var(--muted); border-color: var(--border); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.sm { padding: var(--space-1) var(--space-3); font-size: var(--text-xs); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.badge-confirmed { background: var(--info-bg); color: var(--info); }
+.badge-pending { background: var(--warning-bg); color: var(--warning); }
+.badge-cancelled { background: var(--neutral-bg); color: var(--muted); }
+.badge-noshow { background: var(--danger-bg); color: var(--danger); }
+.badge-fee { background: var(--danger-bg); color: var(--danger); }
+.badge-nocharge { background: var(--success-bg); color: var(--success); }
+.badge-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+th, td { text-align: left; padding: var(--space-3) var(--space-2); border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: var(--weight-medium); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.03em; }
+tr:last-child td { border-bottom: none; }
+td .cell-sub { color: var(--muted); font-size: var(--text-xs); margin-top: 2px; }
+
+.kv { display: grid; grid-template-columns: 130px 1fr; gap: var(--space-2) var(--space-3); font-size: var(--text-sm); }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+
+.log-feed { display: flex; flex-direction: column; gap: var(--space-2); max-height: 300px; overflow-y: auto; }
+.log-entry { display: flex; gap: var(--space-3); font-size: var(--text-sm); padding: var(--space-2) 0; border-bottom: 1px dashed var(--border); }
+.log-entry:last-child { border-bottom: none; }
+.log-entry time { font-family: var(--font-family-mono); font-size: var(--text-xs); color: var(--muted); white-space: nowrap; padding-top: 1px; }
+.log-entry .msg { flex: 1; }
+.log-entry.tone-success .msg { color: var(--success); }
+.log-entry.tone-danger .msg { color: var(--danger); }
+.log-entry.tone-warning .msg { color: var(--warning); }
+.log-entry.tone-neutral .msg { color: var(--muted); }
+
+.notice {
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.notice-info { background: var(--info-bg); color: var(--info); }
+.notice-success { background: var(--success-bg); color: var(--success); }
+.notice-warning { background: var(--warning-bg); color: var(--warning); }
+.notice-muted { background: var(--surface-sunken); color: var(--muted); }
+
+.tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.tab-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-full); font-size: var(--text-sm); cursor: pointer;
+}
+.tab-btn.active { background: var(--brand); color: var(--brand-fg); border-color: var(--brand); }
+
+.field { display: flex; flex-direction: column; gap: var(--space-1); }
+.field label { font-size: var(--text-xs); color: var(--muted); font-weight: var(--weight-medium); text-transform: uppercase; letter-spacing: 0.03em; }
+.field input, .field select {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  background: var(--surface);
+  color: var(--fg);
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--brand); }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: var(--space-4) 0; }
+
+.msg-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background: var(--surface-sunken);
+}
+.msg-card .msg-meta { display:flex; justify-content: space-between; font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-2); }
+.msg-card .msg-subject { font-weight: var(--weight-bold); margin-bottom: var(--space-2); }
+.msg-card .msg-body { font-size: var(--text-sm); color: var(--fg); white-space: pre-line; }
+.msg-card .msg-highlight { background: var(--brand-tint); color: var(--brand); padding: 1px 5px; border-radius: var(--radius-sm); font-weight: var(--weight-medium); }
+
+.spinner {
+  display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--brand);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- =========================================================================
+     REVIEWER BAR — canonical scaffold, present on every screen of this file
+     ========================================================================= -->
+<div class="reviewer-bar">
+  <span class="rb-title">QAM-MANOJ-STORY-036 · No-Show Auto-Detection &amp; Enforcement</span>
+  <span class="rb-spacer"></span>
+  <div class="rb-nav">
+    <button class="rb-btn" id="rbPrev" onclick="rbGo(currentScreen - 1)">&larr; Prev</button>
+    <span class="rb-label" id="rbLabel"></span>
+    <button class="rb-btn" id="rbNext" onclick="rbGo(currentScreen + 1)">Next &rarr;</button>
+  </div>
+  <div class="rb-jump" id="rbJump"></div>
+</div>
+
+<div class="app-shell">
+  <!-- Project nav placeholder: mirrors the console IA; buttons jump between
+       the corresponding prototype screens for reviewer convenience. -->
+  <nav class="app-nav">
+    <div class="brand">Booking Ops</div>
+    <ul>
+      <li><button class="nav-item" data-screen="0" onclick="rbGo(0)">Bookings Queue</button></li>
+      <li><button class="nav-item" data-screen="1" onclick="rbGo(1)">Booking Detail</button></li>
+      <li><button class="nav-item" data-screen="2" onclick="rbGo(2)">No-Show Policies</button></li>
+      <li><button class="nav-item" data-screen="3" onclick="rbGo(3)">Payments Signal Log</button></li>
+      <li><button class="nav-item" data-screen="4" onclick="rbGo(4)">Notifications</button></li>
+    </ul>
+  </nav>
+
+  <main class="main">
+
+    <!-- ===================================================================
+         SCREEN 1 — Bookings Queue
+         Purpose: operations-facing list of bookings across statuses, plus a
+         simulated detection sweep so a reviewer can see the automatic
+         no-show rule applied across many bookings at once.
+         AC covered: 1 (auto mark after grace elapses), 2 (confirmed
+         cancellation before appt time prevents no-show), 7 (10 min < 15 min
+         grace not yet due), 8 (no policy configured still auto no-shows at
+         appointment time), 10 (re-evaluating an already no-show booking is
+         a no-op — no duplicate signal/notification).
+         State: six fixture bookings pre-loaded; "Run detection sweep"
+         transitions the two "Pending detection" rows to No-show.
+         =================================================================== -->
+    <section class="screen" id="screen-0" data-title="Bookings Queue">
+      <div class="page-head">
+        <div class="eyebrow">Booking Ops · Queue</div>
+        <h1>Bookings</h1>
+        <p class="desc">Simulated clock: <strong>09:25 AM, Sep 14, 2026</strong>. The no-show detector sweeps confirmed bookings on an interval; this view shows one sweep cycle before and after it runs.</p>
+      </div>
+
+      <div class="card">
+        <div class="row between" style="margin-bottom: var(--space-4);">
+          <h2 class="card-title" style="margin:0;">Today's bookings</h2>
+          <button class="btn btn-primary" id="sweepBtn" onclick="runSweep()">Run detection sweep</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Booking</th><th>Appointment</th><th>Policy</th><th>Status</th><th>Outcome</th></tr>
+          </thead>
+          <tbody id="queueBody">
+            <!-- rows rendered by renderQueue() -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Sweep activity log<span class="sub">Appended each time the sweep runs — satisfies audit timestamp requirement across the batch</span></h2>
+        <div class="log-feed" id="sweepLog">
+          <div class="log-entry tone-neutral"><time>09:24:58</time><span class="msg">Sweep scheduler idle. Waiting for next interval or manual trigger.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCREEN 2 — Booking Detail: Grace Period Timeline
+         Purpose: the core interactive simulation of a single booking's
+         lifecycle so a reviewer can step through every branch of the
+         no-show rule by clicking buttons.
+         AC covered: 1, 2, 3 (financial outcome signalled), 4 (both parties
+         notified), 5 (timestamp logged), 7, 8, 9 (no policy -> no charge),
+         10 (idempotent re-detection), 11 (cancellation recorded
+         immediately before detection still wins), 12 (customer
+         notification includes outcome), 13 (provider notification
+         includes booking + customer details).
+         State: two switchable scenarios — "Standard grace policy" and
+         "No policy configured" — each with independent, resettable state
+         (elapsed minutes, cancellation flag, status, log).
+         =================================================================== -->
+    <section class="screen" id="screen-1" data-title="Booking Detail">
+      <div class="page-head">
+        <div class="eyebrow">Booking Ops · Detail</div>
+        <h1>Booking detail — grace period simulator</h1>
+        <p class="desc">Step through the detector's decision logic for a single booking. Advance the simulated clock, optionally record a cancellation, then run detection.</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="tabStandard" onclick="switchScenario('standard')">Standard grace policy (Alex Rivera)</button>
+        <button class="tab-btn" id="tabNoPolicy" onclick="switchScenario('nopolicy')">No policy configured (Priya Chandran)</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="stack">
+          <div class="card">
+            <h2 class="card-title" id="detailBookingTitle">Booking</h2>
+            <dl class="kv" id="detailBookingKv"></dl>
+            <hr class="divider">
+            <div class="row wrap" style="gap: var(--space-2);">
+              <button class="btn btn-secondary sm" id="btnAdvance" onclick="advanceClock()">Advance clock +5 min</button>
+              <button class="btn btn-ghost sm" id="btnCancel" onclick="recordCancellation()">Record confirmed cancellation</button>
+              <button class="btn btn-primary sm" id="btnDetect" onclick="runDetection()">Run no-show detection</button>
+              <button class="btn btn-danger sm" onclick="resetScenario()">Reset scenario</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 class="card-title">Event &amp; audit log<span class="sub">Every automated decision is timestamped for auditability (AC5)</span></h2>
+            <div class="log-feed" id="detailLog"></div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <h2 class="card-title">Payments &amp; Invoicing signal</h2>
+            <div id="financialPanel"></div>
+          </div>
+          <div class="card">
+            <h2 class="card-title">Notifications</h2>
+            <div id="notifPanel" class="stack"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCREEN 3 — No-Show Policy Configuration
+         Purpose: show where the grace period + financial outcome are
+         configured, and how updating a policy is versioned so past
+         no-shows keep their original outcome while future detections use
+         the new configuration.
+         AC covered: 6 (policy update governs subsequent no-shows), 8/9
+         (services with no assigned policy fall back to a "no charge"
+         default, shown explicitly).
+         State: two active policies with version history; editing "Standard
+         Grace Policy" appends a new version row and updates the banner.
+         =================================================================== -->
+    <section class="screen" id="screen-2" data-title="No-Show Policies">
+      <div class="page-head">
+        <div class="eyebrow">Booking Ops · Configuration</div>
+        <h1>No-show policies</h1>
+        <p class="desc">Policies define the grace period and the financial outcome signalled to Payments &amp; Invoicing when a booking is auto-marked as no-show.</p>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h2 class="card-title" style="margin:0;">Standard Grace Policy<span class="sub">Applies to: Haircut &amp; Style, Personal Training</span></h2>
+          <button class="btn btn-secondary sm" id="btnEditPolicy" onclick="togglePolicyEdit()">Edit policy</button>
+        </div>
+
+        <div class="row wrap" style="gap: var(--space-5); margin-top: var(--space-3);" id="policySummary">
+          <div class="kv" style="grid-template-columns: 110px 1fr;">
+            <dt>Grace period</dt><dd id="policyGraceVal">15 minutes</dd>
+            <dt>Outcome</dt><dd id="policyOutcomeVal">Charge 50% no-show fee</dd>
+            <dt>Version</dt><dd id="policyVersionVal">v2 — effective Sep 1, 2026</dd>
+          </div>
+        </div>
+
+        <div class="stack" id="policyEditForm" style="display:none; margin-top: var(--space-4);">
+          <div class="row wrap" style="gap: var(--space-4);">
+            <div class="field">
+              <label>Grace period (minutes)</label>
+              <input type="number" id="editGrace" value="15" min="0" step="5">
+            </div>
+            <div class="field">
+              <label>Financial outcome</label>
+              <select id="editOutcome">
+                <option value="fee50">Charge 50% no-show fee</option>
+                <option value="fee100">Charge 100% no-show fee</option>
+                <option value="nocharge">No charge</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary sm" onclick="savePolicy()">Save new version</button>
+            <button class="btn btn-ghost sm" onclick="togglePolicyEdit()">Cancel</button>
+          </div>
+        </div>
+
+        <div class="notice notice-info" style="margin-top: var(--space-4);" id="policyBanner">
+          This policy governs any no-show <strong>detected from now on</strong>. Bookings already marked no-show keep the outcome that was in effect at detection time.
+        </div>
+
+        <table style="margin-top: var(--space-4);">
+          <thead><tr><th>Version</th><th>Grace period</th><th>Outcome</th><th>Effective</th></tr></thead>
+          <tbody id="policyHistoryBody">
+            <tr><td>v2</td><td>15 min</td><td>Charge 50% no-show fee</td><td>Sep 1, 2026 – present</td></tr>
+            <tr><td>v1</td><td>30 min</td><td>Charge 100% no-show fee</td><td>Jan 12, 2026 – Aug 31, 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Spa No-Fee Policy<span class="sub">Applies to: Deep Tissue Massage, Nail Art</span></h2>
+        <div class="kv" style="grid-template-columns: 110px 1fr;">
+          <dt>Grace period</dt><dd>15 minutes</dd>
+          <dt>Outcome</dt><dd>No charge</dd>
+          <dt>Version</dt><dd>v1 — effective Jan 12, 2026</dd>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Consultation services<span class="sub">Initial Consultation, Video Follow-up</span></h2>
+        <div class="notice notice-warning">
+          No no-show policy is assigned to this service group. Per system default, a detected no-show for these bookings signals <strong>"no charge"</strong> to Payments &amp; Invoicing (AC 8 &amp; 9).
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCREEN 4 — Payments & Invoicing Signal Log
+         Purpose: show the outbound integration surface — every no-show
+         status change produces exactly one financial-outcome signal.
+         AC covered: 3 (financial outcome signalled), 6 (outcome reflects
+         the policy version active at detection time), 9 (no-policy
+         bookings signal "no charge"), 10 (idempotent — a booking already
+         signalled is not signalled again on re-detection).
+         State: static fixture log of four signal events.
+         =================================================================== -->
+    <section class="screen" id="screen-3" data-title="Payments Signal Log">
+      <div class="page-head">
+        <div class="eyebrow">Integrations · Outbound</div>
+        <h1>Payments &amp; Invoicing signal log</h1>
+        <p class="desc">One event per booking the first time it is marked no-show. Later detection runs against the same booking do not produce additional events.</p>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Booking</th><th>Detected at</th><th>Policy applied</th><th>Outcome signalled</th><th>Delivery</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>BKG-1042<div class="cell-sub">Alex Rivera · Haircut &amp; Style</div></td>
+              <td>Sep 14, 2026 · 09:15:03 AM</td>
+              <td>Standard Grace Policy v2</td>
+              <td><span class="badge badge-fee">Fee $22.50</span></td>
+              <td><span class="badge badge-nocharge">Delivered</span></td>
+            </tr>
+            <tr>
+              <td>BKG-1044<div class="cell-sub">Priya Chandran · Initial Consultation</div></td>
+              <td>Sep 14, 2026 · 08:30:00 AM</td>
+              <td>None configured (default)</td>
+              <td><span class="badge badge-nocharge">No charge</span></td>
+              <td><span class="badge badge-nocharge">Delivered</span></td>
+            </tr>
+            <tr>
+              <td>BKG-1046<div class="cell-sub">Nina Torres · Nail Art</div></td>
+              <td>Sep 14, 2026 · 08:00:11 AM</td>
+              <td>Spa No-Fee Policy v1</td>
+              <td><span class="badge badge-nocharge">No charge</span></td>
+              <td>
+                <span class="badge badge-nocharge">Delivered</span>
+                <div class="cell-sub">Re-evaluated 09:25 AM sweep — 2nd detection run skipped, no duplicate signal (AC10)</div>
+              </td>
+            </tr>
+            <tr>
+              <td>BKG-1039<div class="cell-sub">Sam Whitfield · Haircut &amp; Style</div></td>
+              <td>Aug 28, 2026 · 02:47:12 PM</td>
+              <td>Standard Grace Policy v1</td>
+              <td><span class="badge badge-fee">Fee $45.00 (100%)</span></td>
+              <td><span class="badge badge-nocharge">Delivered</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="desc" style="margin-top: var(--space-4);">Note the last two rows: BKG-1039 was detected under policy <strong>v1</strong> (100% fee) before the Sep&nbsp;1 update; a booking detected today under the same service uses <strong>v2</strong> (50% fee) — confirming policy updates govern future detections only (AC6).</p>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCREEN 5 — Notifications
+         Purpose: show exactly what the customer and the provider each
+         receive when a booking is auto-marked no-show.
+         AC covered: 4 (both parties notified), 12 (customer notification
+         includes the financial outcome), 13 (provider notification
+         includes booking and customer details).
+         State: toggle between a "fee charged" example and a "no charge"
+         example; content is static fixture copy.
+         =================================================================== -->
+    <section class="screen" id="screen-4" data-title="Notifications">
+      <div class="page-head">
+        <div class="eyebrow">Notifications</div>
+        <h1>No-show notifications</h1>
+        <p class="desc">Sent automatically the moment a booking is marked no-show — one message to the customer, one to the provider.</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" id="notifTabFee" onclick="switchNotifExample('fee')">Fee charged — Alex Rivera</button>
+        <button class="tab-btn" id="notifTabNoFee" onclick="switchNotifExample('nofee')">No charge — Priya Chandran</button>
+      </div>
+
+      <div class="grid-2" id="notifExampleWrap"></div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ---------------------------------------------------------------------
+   Reviewer bar wiring — canonical scaffold
+   --------------------------------------------------------------------- */
+var screens = [
+  { id: 'screen-0', title: 'Bookings Queue' },
+  { id: 'screen-1', title: 'Booking Detail' },
+  { id: 'screen-2', title: 'No-Show Policies' },
+  { id: 'screen-3', title: 'Payments Signal Log' },
+  { id: 'screen-4', title: 'Notifications' }
+];
+var currentScreen = 0;
+
+function renderJumpDots() {
+  var jump = document.getElementById('rbJump');
+  jump.innerHTML = '';
+  screens.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.textContent = i + 1;
+    if (i === currentScreen) b.className = 'active';
+    b.onclick = function () { rbGo(i); };
+    jump.appendChild(b);
+  });
+}
+
+function rbGo(idx) {
+  if (idx < 0 || idx >= screens.length) return;
+  document.getElementById(screens[currentScreen].id).classList.remove('active');
+  currentScreen = idx;
+  document.getElementById(screens[currentScreen].id).classList.add('active');
+  document.getElementById('rbLabel').textContent = 'Screen ' + (idx + 1) + ' of ' + screens.length + ' — ' + screens[idx].title;
+  document.getElementById('rbPrev').disabled = idx === 0;
+  document.getElementById('rbNext').disabled = idx === screens.length - 1;
+  document.querySelectorAll('.nav-item').forEach(function (el) {
+    el.classList.toggle('active', Number(el.getAttribute('data-screen')) === idx);
+  });
+  renderJumpDots();
+}
+
+/* ---------------------------------------------------------------------
+   SCREEN 1 — Bookings Queue
+   --------------------------------------------------------------------- */
+var queueRows = [
+  { id: 'BKG-1042', customer: 'Alex Rivera', provider: 'Jordan Lee', service: 'Haircut & Style', appt: '09:00 AM', policy: 'Standard Grace Policy (15 min)', status: 'pending', elapsed: 25, hasPolicy: true, outcome: null },
+  { id: 'BKG-1043', customer: 'Morgan Diaz', provider: 'Sam Okafor', service: 'Deep Tissue Massage', appt: '09:15 AM', policy: 'Spa No-Fee Policy (15 min)', status: 'cancelled', elapsed: 10, hasPolicy: true, outcome: null },
+  { id: 'BKG-1044', customer: 'Priya Chandran', provider: 'Dana Kim', service: 'Initial Consultation', appt: '08:30 AM', policy: 'None configured', status: 'pending', elapsed: 55, hasPolicy: false, outcome: null },
+  { id: 'BKG-1045', customer: 'Leo Martins', provider: 'Jordan Lee', service: 'Personal Training', appt: '09:15 AM', policy: 'Standard Grace Policy (15 min)', status: 'confirmed', elapsed: 10, hasPolicy: true, outcome: null },
+  { id: 'BKG-1046', customer: 'Nina Torres', provider: 'Sam Okafor', service: 'Nail Art', appt: '07:45 AM', policy: 'Spa No-Fee Policy (15 min)', status: 'noshow', elapsed: 100, hasPolicy: true, outcome: 'nocharge' },
+  { id: 'BKG-1047', customer: 'Dee Osei', provider: 'Dana Kim', service: 'Initial Consultation', appt: '09:30 AM', policy: 'None configured', status: 'confirmed', elapsed: -5, hasPolicy: false, outcome: null }
+];
+
+function statusBadge(row) {
+  if (row.status === 'confirmed') return '<span class="badge badge-confirmed badge-dot">Confirmed</span>';
+  if (row.status === 'pending') return '<span class="badge badge-pending badge-dot">Pending detection</span>';
+  if (row.status === 'cancelled') return '<span class="badge badge-cancelled badge-dot">Cancelled</span>';
+  if (row.status === 'noshow') return '<span class="badge badge-noshow badge-dot">No-show</span>';
+  return '';
+}
+function outcomeBadge(row) {
+  if (row.status !== 'noshow') return '<span class="cell-sub">—</span>';
+  if (row.outcome === 'fee') return '<span class="badge badge-fee">Fee signalled</span>';
+  return '<span class="badge badge-nocharge">No charge signalled</span>';
+}
+
+function renderQueue() {
+  var body = document.getElementById('queueBody');
+  body.innerHTML = queueRows.map(function (row) {
+    return '<tr>' +
+      '<td>' + row.id + '<div class="cell-sub">' + row.customer + ' · ' + row.service + '</div></td>' +
+      '<td>' + row.appt + '<div class="cell-sub">' + (row.elapsed >= 0 ? row.elapsed + ' min elapsed' : 'upcoming') + '</div></td>' +
+      '<td>' + row.policy + '</td>' +
+      '<td>' + statusBadge(row) + '</td>' +
+      '<td>' + outcomeBadge(row) + '</td>' +
+      '</tr>';
+  }).join('');
+}
+renderQueue();
+
+function appendSweepLog(tone, text, ts) {
+  var log = document.getElementById('sweepLog');
+  var entry = document.createElement('div');
+  entry.className = 'log-entry tone-' + tone;
+  entry.innerHTML = '<time>' + ts + '</time><span class="msg">' + text + '</span>';
+  log.insertBefore(entry, log.firstChild);
+}
+
+function runSweep() {
+  var btn = document.getElementById('sweepBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Scanning bookings…';
+  setTimeout(function () {
+    appendSweepLog('neutral', 'Sweep started — evaluating 6 bookings against their no-show policies.', '09:25:00');
+
+    queueRows.forEach(function (row) {
+      if (row.status === 'noshow') {
+        appendSweepLog('neutral', row.id + ' already no-show — skipped, no duplicate signal or notification sent.', '09:25:00');
+        return;
+      }
+      if (row.status === 'cancelled') {
+        appendSweepLog('neutral', row.id + ' has a confirmed cancellation on file — skipped, not marked no-show.', '09:25:00');
+        return;
+      }
+      if (row.elapsed < 0) return; // appointment hasn't happened yet
+      var grace = row.hasPolicy ? 15 : 0;
+      if (row.elapsed < grace) {
+        appendSweepLog('warning', row.id + ' only ' + row.elapsed + ' min elapsed (< ' + grace + ' min grace) — not yet eligible.', '09:25:00');
+        return;
+      }
+      row.status = 'noshow';
+      row.outcome = row.hasPolicy ? 'fee' : 'nocharge';
+      appendSweepLog('danger', row.id + ' marked NO-SHOW. Outcome "' + (row.outcome === 'fee' ? 'charge fee' : 'no charge') + '" signalled to Payments & Invoicing; customer and provider notified.', '09:25:00');
+    });
+
+    renderQueue();
+    btn.disabled = false;
+    btn.textContent = 'Run detection sweep';
+  }, 700);
+}
+
+/* ---------------------------------------------------------------------
+   SCREEN 2 — Booking Detail simulator
+   --------------------------------------------------------------------- */
+var scenarioDefs = {
+  standard: {
+    id: 'BKG-1042', customer: 'Alex Rivera', provider: 'Jordan Lee', service: 'Haircut & Style',
+    location: 'Studio 12, Suite 4', apptTime: 9 * 60, apptLabel: '09:00 AM', apptDate: 'Sep 14, 2026',
+    policyName: 'Standard Grace Policy v2', grace: 15, hasPolicy: true,
+    outcomeLabel: 'Charge 50% no-show fee', amount: '$22.50 (50% of $45.00 service)'
+  },
+  nopolicy: {
+    id: 'BKG-1044', customer: 'Priya Chandran', provider: 'Dana Kim', service: 'Initial Consultation',
+    location: 'Video call', apptTime: 8 * 60 + 30, apptLabel: '08:30 AM', apptDate: 'Sep 14, 2026',
+    policyName: 'None configured', grace: 0, hasPolicy: false,
+    outcomeLabel: 'No charge (system default)', amount: '$0.00'
+  }
+};
+
+function freshState() {
+  return { elapsed: 0, status: 'confirmed', financialSignaled: false, notificationsSent: false, log: [] };
+}
+var scenarioState = { standard: freshState(), nopolicy: freshState() };
+var activeScenario = 'standard';
+
+function minutesToClock(base, add) {
+  var total = base + add;
+  var h = Math.floor(total / 60);
+  var m = total % 60;
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  var h12 = h % 12; if (h12 === 0) h12 = 12;
+  return (h12 < 10 ? '0' + h12 : h12) + ':' + (m < 10 ? '0' + m : m) + ' ' + ampm;
+}
+
+function log(scenario, tone, text) {
+  var def = scenarioDefs[scenario];
+  var st = scenarioState[scenario];
+  var ts = minutesToClock(def.apptTime, st.elapsed);
+  st.log.unshift({ tone: tone, text: text, ts: ts });
+}
+
+function switchScenario(name) {
+  activeScenario = name;
+  document.getElementById('tabStandard').classList.toggle('active', name === 'standard');
+  document.getElementById('tabNoPolicy').classList.toggle('active', name === 'nopolicy');
+  renderDetail();
+}
+
+function advanceClock() {
+  var st = scenarioState[activeScenario];
+  if (st.status !== 'confirmed') return;
+  st.elapsed += 5;
+  log(activeScenario, 'neutral', 'Clock advanced — ' + st.elapsed + ' min since appointment time.');
+  renderDetail();
+}
+
+function recordCancellation() {
+  var st = scenarioState[activeScenario];
+  if (st.status !== 'confirmed') return;
+  st.status = 'cancelled';
+  log(activeScenario, 'neutral', 'Confirmed cancellation recorded by customer.');
+  renderDetail();
+}
+
+function runDetection() {
+  var btn = document.getElementById('btnDetect');
+  btn.disabled = true;
+  var originalText = btn.textContent;
+  btn.innerHTML = '<span class="spinner"></span> Running…';
+  setTimeout(function () {
+    var def = scenarioDefs[activeScenario];
+    var st = scenarioState[activeScenario];
+
+    if (st.status === 'noshow') {
+      log(activeScenario, 'neutral', 'Detection ran — booking already no-show. No additional signal or notification sent (idempotent).');
+    } else if (st.status === 'cancelled') {
+      log(activeScenario, 'neutral', 'Detection ran — confirmed cancellation on file. Booking is not marked no-show.');
+    } else if (st.elapsed < def.grace) {
+      log(activeScenario, 'warning', 'Detection ran — only ' + st.elapsed + ' min elapsed (< ' + def.grace + ' min grace). Not yet eligible.');
+    } else {
+      st.status = 'noshow';
+      log(activeScenario, 'danger', 'Booking marked NO-SHOW.');
+      st.financialSignaled = true;
+      log(activeScenario, 'danger', 'Financial outcome "' + def.outcomeLabel + '" signalled to Payments & Invoicing.');
+      st.notificationsSent = true;
+      log(activeScenario, 'danger', 'Notifications sent to customer (' + def.customer + ') and provider (' + def.provider + ').');
+    }
+
+    btn.disabled = false;
+    btn.textContent = originalText;
+    renderDetail();
+  }, 500);
+}
+
+function resetScenario() {
+  scenarioState[activeScenario] = freshState();
+  renderDetail();
+}
+
+function statusBadgeDetail(status) {
+  if (status === 'confirmed') return '<span class="badge badge-confirmed badge-dot">Confirmed</span>';
+  if (status === 'cancelled') return '<span class="badge badge-cancelled badge-dot">Cancelled</span>';
+  if (status === 'noshow') return '<span class="badge badge-noshow badge-dot">No-show</span>';
+  return '';
+}
+
+function renderDetail() {
+  var def = scenarioDefs[activeScenario];
+  var st = scenarioState[activeScenario];
+
+  document.getElementById('detailBookingTitle').innerHTML = def.id + '<span class="sub">' + def.service + ' · ' + def.apptDate + ' ' + def.apptLabel + '</span>';
+  document.getElementById('detailBookingKv').innerHTML =
+    '<dt>Customer</dt><dd>' + def.customer + '</dd>' +
+    '<dt>Provider</dt><dd>' + def.provider + '</dd>' +
+    '<dt>Location</dt><dd>' + def.location + '</dd>' +
+    '<dt>Policy</dt><dd>' + def.policyName + (def.hasPolicy ? '' : ' <span class="badge badge-pending">defaults to no charge</span>') + '</dd>' +
+    '<dt>Grace period</dt><dd>' + (def.hasPolicy ? def.grace + ' minutes' : 'none — treated as due immediately at appointment time') + '</dd>' +
+    '<dt>Status</dt><dd>' + statusBadgeDetail(st.status) + '</dd>' +
+    '<dt>Elapsed</dt><dd>' + st.elapsed + ' min since ' + def.apptLabel + ' (now ' + minutesToClock(def.apptTime, st.elapsed) + ')</dd>';
+
+  document.getElementById('btnAdvance').disabled = st.status !== 'confirmed';
+  document.getElementById('btnCancel').disabled = st.status !== 'confirmed';
+  document.getElementById('btnDetect').disabled = false;
+
+  var logEl = document.getElementById('detailLog');
+  if (st.log.length === 0) {
+    logEl.innerHTML = '<div class="log-entry tone-neutral"><time>—</time><span class="msg">No events yet. Advance the clock or run detection to begin.</span></div>';
+  } else {
+    logEl.innerHTML = st.log.map(function (e) {
+      return '<div class="log-entry tone-' + e.tone + '"><time>' + def.apptDate.split(',')[0] + ' ' + e.ts + '</time><span class="msg">' + e.text + '</span></div>';
+    }).join('');
+  }
+
+  var finEl = document.getElementById('financialPanel');
+  if (!st.financialSignaled) {
+    finEl.innerHTML = '<p class="notice notice-muted">Not yet signalled. Awaiting no-show detection.</p>';
+  } else {
+    finEl.innerHTML =
+      '<div class="notice ' + (def.hasPolicy ? 'notice-warning' : 'notice-success') + '">' +
+      '<strong>' + def.outcomeLabel + '</strong></div>' +
+      '<dl class="kv" style="margin-top: var(--space-3);">' +
+      '<dt>Amount</dt><dd>' + def.amount + '</dd>' +
+      '<dt>Policy used</dt><dd>' + def.policyName + '</dd>' +
+      '<dt>Delivered</dt><dd>Payments &amp; Invoicing — acknowledged</dd>' +
+      '</dl>';
+  }
+
+  var notifEl = document.getElementById('notifPanel');
+  if (!st.notificationsSent) {
+    notifEl.innerHTML = '<p class="notice notice-muted">No notifications sent yet.</p>';
+  } else {
+    notifEl.innerHTML =
+      '<div class="msg-card"><div class="msg-meta"><span>To customer · ' + def.customer + '</span><span>Delivered</span></div>' +
+      '<div class="msg-subject">Your appointment was marked as a no-show</div>' +
+      '<div class="msg-body">Hi ' + def.customer.split(' ')[0] + ', your ' + def.service + ' appointment on ' + def.apptDate + ' at ' + def.apptLabel + ' was marked as a no-show. ' +
+      '<span class="msg-highlight">' + def.outcomeLabel + (def.hasPolicy ? ' — ' + def.amount : '') + '</span></div></div>' +
+
+      '<div class="msg-card"><div class="msg-meta"><span>To provider · ' + def.provider + '</span><span>Delivered</span></div>' +
+      '<div class="msg-subject">Booking marked as no-show</div>' +
+      '<div class="msg-body">' + def.id + ' — ' + def.service + ' with <span class="msg-highlight">' + def.customer + '</span> at ' + def.apptLabel + ' (' + def.location + ') was automatically marked as a no-show. Financial outcome: ' + def.outcomeLabel + '.</div></div>';
+  }
+}
+renderDetail();
+
+/* ---------------------------------------------------------------------
+   SCREEN 3 — Policy configuration
+   --------------------------------------------------------------------- */
+function togglePolicyEdit() {
+  var form = document.getElementById('policyEditForm');
+  var open = form.style.display !== 'none';
+  form.style.display = open ? 'none' : 'flex';
+}
+
+function savePolicy() {
+  var grace = document.getElementById('editGrace').value;
+  var outcomeSel = document.getElementById('editOutcome');
+  var outcomeLabel = outcomeSel.options[outcomeSel.selectedIndex].text;
+
+  document.getElementById('policyGraceVal').textContent = grace + ' minutes';
+  document.getElementById('policyOutcomeVal').textContent = outcomeLabel;
+  document.getElementById('policyVersionVal').textContent = 'v3 — effective Sep 14, 2026';
+
+  var histBody = document.getElementById('policyHistoryBody');
+  var row = document.createElement('tr');
+  row.innerHTML = '<td>v3</td><td>' + grace + ' min</td><td>' + outcomeLabel + '</td><td>Sep 14, 2026 – present</td>';
+  histBody.insertBefore(row, histBody.firstChild);
+  var rows = histBody.querySelectorAll('tr');
+  if (rows[1]) {
+    var prevCells = rows[1].children;
+    prevCells[3].textContent = prevCells[3].textContent.split('–')[0].trim() + ' – Sep 13, 2026';
+  }
+
+  document.getElementById('policyBanner').innerHTML =
+    'Policy updated to <strong>v3</strong>. Any no-show <strong>detected from Sep 14, 2026 onward</strong> uses this configuration. No-shows already detected under v1/v2 keep their original outcome.';
+
+  togglePolicyEdit();
+}
+
+/* ---------------------------------------------------------------------
+   SCREEN 5 — Notification examples
+   --------------------------------------------------------------------- */
+var notifExamples = {
+  fee: {
+    customer: 'Alex Rivera', provider: 'Jordan Lee', service: 'Haircut & Style', appt: '09:00 AM, Sep 14, 2026',
+    location: 'Studio 12, Suite 4', outcome: 'Charge 50% no-show fee', amount: '$22.50'
+  },
+  nofee: {
+    customer: 'Priya Chandran', provider: 'Dana Kim', service: 'Initial Consultation', appt: '08:30 AM, Sep 14, 2026',
+    location: 'Video call', outcome: 'No charge', amount: '$0.00'
+  }
+};
+var activeNotifExample = 'fee';
+
+function switchNotifExample(name) {
+  activeNotifExample = name;
+  document.getElementById('notifTabFee').classList.toggle('active', name === 'fee');
+  document.getElementById('notifTabNoFee').classList.toggle('active', name === 'nofee');
+  renderNotifExample();
+}
+
+function renderNotifExample() {
+  var ex = notifExamples[activeNotifExample];
+  var wrap = document.getElementById('notifExampleWrap');
+  wrap.innerHTML =
+    '<div class="msg-card"><div class="msg-meta"><span>Customer notification · ' + ex.customer + '</span><span>Delivered via email + push</span></div>' +
+    '<div class="msg-subject">Your appointment was marked as a no-show</div>' +
+    '<div class="msg-body">Hi ' + ex.customer.split(' ')[0] + ',\n\nYour ' + ex.service + ' appointment on ' + ex.appt + ' was automatically marked as a no-show because no cancellation was recorded before the appointment time.\n\nFinancial outcome: <span class="msg-highlight">' + ex.outcome + (ex.amount !== '$0.00' ? ' — ' + ex.amount : '') + '</span>\n\nIf you believe this is an error, contact support.</div></div>' +
+
+    '<div class="msg-card"><div class="msg-meta"><span>Provider notification · ' + ex.provider + '</span><span>Delivered via email + push</span></div>' +
+    '<div class="msg-subject">Booking marked as no-show</div>' +
+    '<div class="msg-body">A booking on your schedule was marked as a no-show.\n\nCustomer: <span class="msg-highlight">' + ex.customer + '</span>\nService: ' + ex.service + '\nTime: ' + ex.appt + '\nLocation: ' + ex.location + '\n\nFinancial outcome: ' + ex.outcome + '</div></div>';
+}
+renderNotifExample();
+
+/* ---------------------------------------------------------------------
+   Init
+   --------------------------------------------------------------------- */
+rbGo(0);
+</script>
+</body>
+</html>
