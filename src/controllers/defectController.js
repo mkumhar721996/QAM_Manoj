@@ -10,11 +10,24 @@ function createDefectController(repository) {
       if (!userId) {
         return sendJson(res, 401, { error: 'Unauthorized' });
       }
+      if (body.status !== undefined && body.status !== null && body.status !== 'Open') {
+        return sendJson(res, 400, {
+          error: "New defects must be created with status 'Open'",
+        });
+      }
       const defect = repository.create({
-        reporterId: body.reporterId || userId,
+        reporterId: userId,
         title: body.title,
-        status: body.status,
+        status: 'Open',
       });
+      console.log(
+        JSON.stringify({
+          event: 'defect_created',
+          userId,
+          defectId: defect.id,
+          at: new Date().toISOString(),
+        })
+      );
       sendJson(res, 201, defect);
     },
 
@@ -27,6 +40,7 @@ function createDefectController(repository) {
       if (!defect) {
         return sendJson(res, 404, { error: 'Defect not found' });
       }
+      console.log(JSON.stringify({ event: 'defect_viewed', userId, defectId: id }));
       sendJson(res, 200, defect);
     },
 
@@ -40,13 +54,24 @@ function createDefectController(repository) {
         return sendJson(res, 404, { error: 'Defect not found' });
       }
       const { toStatus } = body;
-      if (!isValidTransition(defect.status, toStatus)) {
+      const fromStatus = defect.status;
+      if (!isValidTransition(fromStatus, toStatus)) {
         return sendJson(res, 409, {
-          error: `Cannot transition defect from '${defect.status}' to '${toStatus}'`,
+          error: `Cannot transition defect from '${fromStatus}' to '${toStatus}'`,
           defect,
         });
       }
       applyTransition(defect, toStatus);
+      console.log(
+        JSON.stringify({
+          event: 'defect_transitioned',
+          userId,
+          defectId: id,
+          fromStatus,
+          toStatus,
+          at: defect.lastTransitionAt,
+        })
+      );
       sendJson(res, 200, defect);
     },
   };

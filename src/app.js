@@ -33,6 +33,7 @@ function createApp() {
 
       return sendJson(res, 404, { error: 'Not found' });
     } catch (err) {
+      console.error('Request processing failed:', err);
       return sendJson(res, 400, { error: 'Invalid request body' });
     }
   });

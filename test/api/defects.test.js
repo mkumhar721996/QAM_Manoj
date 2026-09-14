@@ -19,11 +19,11 @@ function authHeaders(userId) {
   return { Authorization: `Bearer ${userId}`, 'Content-Type': 'application/json' };
 }
 
-async function seedDefect(userId, status) {
+async function seedDefect(userId) {
   const res = await fetch(`${baseUrl}/defects`, {
     method: 'POST',
     headers: authHeaders(userId),
-    body: JSON.stringify({ reporterId: userId, title: 'Seed defect', status }),
+    body: JSON.stringify({ title: 'Seed defect' }),
   });
   return res.json();
 }
@@ -37,6 +37,24 @@ async function transitionDefect(userId, id, toStatus) {
   return { status: res.status, body: await res.json() };
 }
 
+// Defects can only be created in 'Open' status, so tests that need a defect in
+// a later status must reach it via real transitions rather than fabricating it.
+const TRANSITIONS_TO_REACH = {
+  Open: [],
+  Fixed: ['Fixed'],
+  Reopened: ['Fixed', 'Reopened'],
+  Closed: ['Fixed', 'Closed'],
+};
+
+async function seedDefectInStatus(userId, targetStatus) {
+  let defect = await seedDefect(userId);
+  for (const toStatus of TRANSITIONS_TO_REACH[targetStatus]) {
+    const { body } = await transitionDefect(userId, defect.id, toStatus);
+    defect = body;
+  }
+  return defect;
+}
+
 async function getDefect(userId, id) {
   const res = await fetch(`${baseUrl}/defects/${id}`, {
     method: 'GET',
@@ -46,35 +64,35 @@ async function getDefect(userId, id) {
 }
 
 test('AC1: Open -> Fixed succeeds for an authenticated tester', async () => {
-  const defect = await seedDefect('tester-1', 'Open');
+  const defect = await seedDefect('tester-1');
   const { status, body } = await transitionDefect('tester-1', defect.id, 'Fixed');
   assert.equal(status, 200);
   assert.equal(body.status, 'Fixed');
 });
 
 test('AC2: Fixed -> Closed succeeds for an authenticated tester', async () => {
-  const defect = await seedDefect('tester-1', 'Fixed');
+  const defect = await seedDefectInStatus('tester-1', 'Fixed');
   const { status, body } = await transitionDefect('tester-1', defect.id, 'Closed');
   assert.equal(status, 200);
   assert.equal(body.status, 'Closed');
 });
 
 test('AC3: Fixed -> Reopened succeeds for an authenticated tester', async () => {
-  const defect = await seedDefect('tester-1', 'Fixed');
+  const defect = await seedDefectInStatus('tester-1', 'Fixed');
   const { status, body } = await transitionDefect('tester-1', defect.id, 'Reopened');
   assert.equal(status, 200);
   assert.equal(body.status, 'Reopened');
 });
 
 test('AC4: Reopened -> Fixed succeeds for an authenticated tester', async () => {
-  const defect = await seedDefect('tester-1', 'Reopened');
+  const defect = await seedDefectInStatus('tester-1', 'Reopened');
   const { status, body } = await transitionDefect('tester-1', defect.id, 'Fixed');
   assert.equal(status, 200);
   assert.equal(body.status, 'Fixed');
 });
 
 test('AC5: any transition attempt from Closed is rejected and status remains Closed', async () => {
-  const defect = await seedDefect('tester-1', 'Closed');
+  const defect = await seedDefectInStatus('tester-1', 'Closed');
 
   for (const toStatus of ['Open', 'Fixed', 'Reopened']) {
     const { status, body } = await transitionDefect('tester-1', defect.id, toStatus);
@@ -88,7 +106,7 @@ test('AC5: any transition attempt from Closed is rejected and status remains Clo
 
 test('AC6: Open cannot transition directly to Closed or Reopened', async () => {
   for (const toStatus of ['Closed', 'Reopened']) {
-    const defect = await seedDefect('tester-1', 'Open');
+    const defect = await seedDefect('tester-1');
     const { status, body } = await transitionDefect('tester-1', defect.id, toStatus);
     assert.ok(status === 409 || status === 422, `expected rejection for Open -> ${toStatus}`);
     assert.equal(body.defect.status, 'Open');
@@ -96,14 +114,14 @@ test('AC6: Open cannot transition directly to Closed or Reopened', async () => {
 });
 
 test('AC7: a tester who is not the original reporter can still transition the defect', async () => {
-  const defect = await seedDefect('original-reporter', 'Open');
+  const defect = await seedDefect('original-reporter');
   const { status, body } = await transitionDefect('a-different-tester', defect.id, 'Fixed');
   assert.equal(status, 200);
   assert.equal(body.status, 'Fixed');
 });
 
 test('AC8: full transition history is visible in chronological order to any authenticated user', async () => {
-  const defect = await seedDefect('tester-1', 'Open');
+  const defect = await seedDefect('tester-1');
   await transitionDefect('tester-1', defect.id, 'Fixed');
   await transitionDefect('tester-1', defect.id, 'Reopened');
   await transitionDefect('tester-1', defect.id, 'Fixed');
@@ -130,7 +148,7 @@ test('AC8: full transition history is visible in chronological order to any auth
 });
 
 test('AC9: a completed transition records and exposes a timestamp on the defect', async () => {
-  const defect = await seedDefect('tester-1', 'Open');
+  const defect = await seedDefect('tester-1');
   const beforeTransition = Date.now();
   const { status, body } = await transitionDefect('tester-1', defect.id, 'Fixed');
   const afterTransition = Date.now();
@@ -144,11 +162,45 @@ test('AC9: a completed transition records and exposes a timestamp on the defect'
 });
 
 test('an unauthenticated request is rejected', async () => {
-  const defect = await seedDefect('tester-1', 'Open');
+  const defect = await seedDefect('tester-1');
   const res = await fetch(`${baseUrl}/defects/${defect.id}/transitions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ toStatus: 'Fixed' }),
   });
   assert.equal(res.status, 401);
+});
+
+test('POST /defects without authentication is rejected', async () => {
+  const res = await fetch(`${baseUrl}/defects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Unauthenticated defect' }),
+  });
+  assert.equal(res.status, 401);
+});
+
+test('GET /defects/:id without authentication is rejected', async () => {
+  const defect = await seedDefect('tester-1');
+  const res = await fetch(`${baseUrl}/defects/${defect.id}`, { method: 'GET' });
+  assert.equal(res.status, 401);
+});
+
+test('POST /defects rejects a client-supplied non-Open initial status', async () => {
+  const res = await fetch(`${baseUrl}/defects`, {
+    method: 'POST',
+    headers: authHeaders('tester-1'),
+    body: JSON.stringify({ title: 'Bad defect', status: 'Closed' }),
+  });
+  assert.equal(res.status, 400);
+});
+
+test('POST /defects ignores a client-supplied reporterId and uses the authenticated user', async () => {
+  const res = await fetch(`${baseUrl}/defects`, {
+    method: 'POST',
+    headers: authHeaders('tester-1'),
+    body: JSON.stringify({ title: 'Spoofed defect', reporterId: 'someone-else' }),
+  });
+  const body = await res.json();
+  assert.equal(body.reporterId, 'tester-1');
 });

@@ -1,11 +1,12 @@
 function authenticate(req) {
   const header = req.headers['authorization'] || '';
   const match = /^Bearer (.+)$/.exec(header);
-  if (!match) {
+  const userId = match ? match[1].trim() : '';
+  if (userId.length === 0) {
+    console.warn('Auth failed for request', { method: req.method, url: req.url });
     return null;
   }
-  const userId = match[1].trim();
-  return userId.length > 0 ? userId : null;
+  return userId;
 }
 
 module.exports = { authenticate };
