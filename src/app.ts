@@ -2,7 +2,7 @@ import type { IncomingMessage, RequestListener, ServerResponse } from "node:http
 import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
-import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
+import { handleGetSession, handleLogin, handleLogout, handleRefresh, handleRegister } from "./auth/authController.ts";
 import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
 
 export interface AppDependencies {
@@ -38,7 +38,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse, authServ
       return;
     }
 
-    if (route !== "POST /auth/login" && route !== "POST /auth/refresh" && route !== "POST /auth/logout") {
+    if (
+      route !== "POST /auth/login" &&
+      route !== "POST /auth/register" &&
+      route !== "POST /auth/refresh" &&
+      route !== "POST /auth/logout"
+    ) {
       sendJson(res, 404, { error: "not found" });
       return;
     }
@@ -47,6 +52,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse, authServ
 
     if (route === "POST /auth/login") {
       const result = await handleLogin(authService, body);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "POST /auth/register") {
+      const result = await handleRegister(authService, body);
       sendJson(res, result.status, result.body);
       return;
     }

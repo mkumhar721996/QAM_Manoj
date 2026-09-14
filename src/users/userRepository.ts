@@ -1,5 +1,6 @@
+import crypto from "node:crypto";
 import { testUsers } from "./fixtures/testUsers.ts";
-import type { User } from "./fixtures/testUsers.ts";
+import type { Role, User } from "./fixtures/testUsers.ts";
 
 export class UserRepository {
   private usersByUsername: Map<string, User>;
@@ -16,5 +17,12 @@ export class UserRepository {
 
   findById(userId: string): User | undefined {
     return this.usersById.get(userId);
+  }
+
+  create(input: { username: string; passwordHash: string; role: Role; name?: string }): User {
+    const user: User = { id: crypto.randomUUID(), ...input };
+    this.usersByUsername.set(user.username, user);
+    this.usersById.set(user.id, user);
+    return user;
   }
 }

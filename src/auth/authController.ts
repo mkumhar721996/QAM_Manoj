@@ -1,6 +1,7 @@
 import type { AuthService } from "./authService.ts";
-import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
+import { EmailAlreadyRegisteredError, InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
 import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
+import { validateRegistrationInput } from "./registrationValidation.ts";
 import { asRecord } from "../httpUtils.ts";
 
 export interface ControllerResponse {
@@ -31,6 +32,36 @@ export async function handleLogin(authService: AuthService, requestBody: unknown
     if (err instanceof InvalidCredentialsError) {
       console.warn(`login failed for username=${username}: ${err.message}`);
       return { status: 401, body: { error: err.message } };
+    }
+    throw err;
+  }
+}
+
+export async function handleRegister(authService: AuthService, requestBody: unknown): Promise<ControllerResponse> {
+  const { name, email, password } = asRecord(requestBody);
+
+  const errors = validateRegistrationInput({ name, email, password });
+  if (Object.keys(errors).length > 0) {
+    return { status: 400, body: { errors } };
+  }
+
+  try {
+    const result = await authService.register(name as string, email as string, password as string);
+    console.log(`registration succeeded for email=${(email as string).trim().toLowerCase()}`);
+    return {
+      status: 201,
+      body: {
+        access_token: result.accessToken,
+        expires_in: result.accessTokenExpiresInSeconds,
+        refresh_token: result.refreshToken,
+        token_type: "Bearer",
+        next_step: "credential_submission",
+      },
+    };
+  } catch (err) {
+    if (err instanceof EmailAlreadyRegisteredError) {
+      console.warn(`registration failed: ${err.message}`);
+      return { status: 409, body: { error: err.message } };
     }
     throw err;
   }
