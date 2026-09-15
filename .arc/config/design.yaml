@@ -1,0 +1,5 @@
+design_system:
+  dir: src/design-system
+  assets:
+    tokens: tokens.css
+    prototype_utils: prototype-utils.css
