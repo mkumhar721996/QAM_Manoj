@@ -2,11 +2,25 @@ import type { ControllerResponse } from "../auth/authController.ts";
 import { asRecord } from "../httpUtils.ts";
 import { ChargebackService, TransactionNotFoundError } from "./chargebackService.ts";
 import type { ChargebackWebhookEvent } from "./paymentsModel.ts";
+import { verifyStripeSignature } from "./stripeSignatureVerifier.ts";
 
 export function handleChargebackWebhook(
   chargebackService: ChargebackService,
-  requestBody: unknown,
+  rawRequestBody: string,
+  signatureHeader: string | undefined,
+  webhookSecret: string,
 ): ControllerResponse {
+  if (!verifyStripeSignature(rawRequestBody, signatureHeader, webhookSecret)) {
+    return { status: 401, body: { error: "invalid stripe signature" } };
+  }
+
+  let requestBody: unknown;
+  try {
+    requestBody = rawRequestBody.length === 0 ? {} : JSON.parse(rawRequestBody);
+  } catch {
+    return { status: 400, body: { error: "invalid JSON body" } };
+  }
+
   const body = asRecord(requestBody);
   const data = asRecord(body.data);
   const object = asRecord(data.object);

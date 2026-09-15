@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import { startTestServer } from "./testServer.ts";
 import { TransactionRepository } from "../src/payments/transactionRepository.ts";
 import { PayoutRepository } from "../src/payments/payoutRepository.ts";
@@ -9,6 +10,7 @@ import { NotificationRepository } from "../src/payments/notificationRepository.t
 import type { Transaction } from "../src/payments/paymentsModel.ts";
 
 const PROVIDER_ID = "user-provider-1";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET as string;
 
 function disputeEvent(id: string, chargeId: string, amount: number): Record<string, unknown> {
   return {
@@ -18,11 +20,25 @@ function disputeEvent(id: string, chargeId: string, amount: number): Record<stri
   };
 }
 
-function postWebhook(baseUrl: string, event: Record<string, unknown>): Promise<Response> {
+function signPayload(payload: string, secret: string = STRIPE_WEBHOOK_SECRET): string {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = crypto.createHmac("sha256", secret).update(`${timestamp}.${payload}`).digest("hex");
+  return `t=${timestamp},v1=${signature}`;
+}
+
+function postWebhook(
+  baseUrl: string,
+  event: Record<string, unknown>,
+  signatureHeader?: string,
+): Promise<Response> {
+  const payload = JSON.stringify(event);
   return fetch(`${baseUrl}/webhooks/stripe/chargebacks`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(event),
+    headers: {
+      "Content-Type": "application/json",
+      "Stripe-Signature": signatureHeader ?? signPayload(payload),
+    },
+    body: payload,
   });
 }
 
@@ -47,7 +63,7 @@ test("AC1: a chargeback webhook triggers a disbursement reversal for the affecte
     assert.equal(res.status, 200);
     const body = (await res.json()) as { provider_id: string; action: string };
     assert.equal(body.provider_id, PROVIDER_ID);
-    assert.ok(["clawback_from_pending_payout", "hold_future_payouts", "direct_clawback"].includes(body.action));
+    assert.equal(body.action, "clawback_from_pending_payout");
   } finally {
     await server.close();
   }
@@ -174,6 +190,29 @@ test("malformed chargeback webhook payload returns 400", async () => {
   try {
     const res = await postWebhook(server.baseUrl, { id: "evt_9", type: "charge.dispute.created" });
     assert.equal(res.status, 400);
+  } finally {
+    await server.close();
+  }
+});
+
+test("a chargeback webhook with a missing or invalid Stripe signature is rejected", async () => {
+  const transactionRepository = new TransactionRepository([transaction({})]);
+  const server = await startTestServer({ transactionRepository });
+  try {
+    const event = disputeEvent("evt_10", "ch_1", 40);
+
+    const missingSignature = await fetch(`${server.baseUrl}/webhooks/stripe/chargebacks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+    });
+    assert.equal(missingSignature.status, 401);
+
+    const invalidSignature = await postWebhook(server.baseUrl, event, "t=1,v1=deadbeef");
+    assert.equal(invalidSignature.status, 401);
+
+    const wrongSecret = await postWebhook(server.baseUrl, event, signPayload(JSON.stringify(event), "wrong-secret"));
+    assert.equal(wrongSecret.status, 401);
   } finally {
     await server.close();
   }

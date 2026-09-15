@@ -3,7 +3,7 @@ import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
 import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
-import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
+import { PayloadTooLargeError, readJsonBody, readRawBody, sendJson } from "./httpUtils.ts";
 import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
@@ -16,6 +16,7 @@ import { NotificationRepository } from "./payments/notificationRepository.ts";
 import { NotificationService } from "./payments/notificationService.ts";
 import { ChargebackService } from "./payments/chargebackService.ts";
 import { handleChargebackWebhook } from "./payments/chargebackController.ts";
+import { STRIPE_WEBHOOK_SECRET } from "./payments/stripeWebhookSecret.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
@@ -104,6 +105,19 @@ async function handleRequest(
       return;
     }
 
+    if (route === "POST /webhooks/stripe/chargebacks") {
+      const rawBody = await readRawBody(req);
+      const signatureHeader = req.headers["stripe-signature"];
+      const result = handleChargebackWebhook(
+        chargebackService,
+        rawBody,
+        Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader,
+        STRIPE_WEBHOOK_SECRET,
+      );
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
     const body = await readJsonBody(req);
 
     if (route === "POST /auth/login") {
@@ -120,12 +134,6 @@ async function handleRequest(
 
     if (route === "POST /cart/items") {
       const result = handleAddToCart(cartService, req.headers.authorization, body);
-      sendJson(res, result.status, result.body);
-      return;
-    }
-
-    if (route === "POST /webhooks/stripe/chargebacks") {
-      const result = handleChargebackWebhook(chargebackService, body);
       sendJson(res, result.status, result.body);
       return;
     }
