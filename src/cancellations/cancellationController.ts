@@ -14,8 +14,12 @@ export async function handleCancellationEvent(
   authorizationHeader: string | undefined,
   requestBody: unknown,
 ): Promise<ControllerResponse> {
-  if (!extractBearerPayload(authorizationHeader)) {
+  const authPayload = extractBearerPayload(authorizationHeader);
+  if (!authPayload) {
     return { status: 401, body: { error: "missing or invalid authorization" } };
+  }
+  if (authPayload.role !== "admin") {
+    return { status: 403, body: { error: "caller is not authorized to execute cancellation payments" } };
   }
 
   const {

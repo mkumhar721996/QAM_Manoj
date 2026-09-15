@@ -201,6 +201,31 @@ test("unauthenticated requests are rejected and no money movement occurs", async
   }
 });
 
+test("a caller without the internal-service role is rejected and no money movement occurs", async () => {
+  const stripeGateway = new FakeStripeGateway();
+  const server = await startTestServer({ stripeGateway });
+  try {
+    const customerAuthHeader = `Bearer ${issueAccessToken({ userId: "customer-1", role: "customer" })}`;
+    const res = await fetch(`${server.baseUrl}/payments/cancellations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: customerAuthHeader },
+      body: JSON.stringify({
+        booking_id: "booking-10",
+        actor_id: "customer-1",
+        outcome: "full_refund",
+        payment_intent_id: "pi_222",
+        refund_amount_cents: 1000,
+        non_refundable_amount_cents: 0,
+        service_fee_cents: 0,
+      }),
+    });
+    assert.equal(res.status, 403);
+    assert.equal(stripeGateway.refundCalls.length, 0);
+  } finally {
+    await server.close();
+  }
+});
+
 test("negative amounts are rejected as invalid payload", async () => {
   const stripeGateway = new FakeStripeGateway();
   const server = await startTestServer({ stripeGateway });
