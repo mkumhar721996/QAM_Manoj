@@ -8,12 +8,25 @@ import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { InvoiceRepository } from "./invoicing/invoiceRepository.ts";
+import { CreditNoteRepository } from "./invoicing/creditNoteRepository.ts";
+import { DisbursementRecordRepository } from "./invoicing/disbursementRecordRepository.ts";
+import { CreditNoteService } from "./invoicing/creditNoteService.ts";
+import {
+  handleGetCreditNote,
+  handleGetDisbursementRecord,
+  handlePostCancellationDisbursement,
+  handlePostRefund,
+} from "./invoicing/creditNoteController.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
   sessionRepository?: SessionRepository;
   pizzaRepository?: PizzaRepository;
   cartRepository?: CartRepository;
+  invoiceRepository?: InvoiceRepository;
+  creditNoteRepository?: CreditNoteRepository;
+  disbursementRecordRepository?: DisbursementRecordRepository;
 }
 
 export interface App {
@@ -27,9 +40,13 @@ export function createApp(deps: AppDependencies = {}): App {
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
+  const invoiceRepository = deps.invoiceRepository ?? new InvoiceRepository();
+  const creditNoteRepository = deps.creditNoteRepository ?? new CreditNoteRepository();
+  const disbursementRecordRepository = deps.disbursementRecordRepository ?? new DisbursementRecordRepository();
+  const creditNoteService = new CreditNoteService(invoiceRepository, creditNoteRepository, disbursementRecordRepository);
 
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
-    void handleRequest(req, res, authService, pizzaRepository, cartService);
+    void handleRequest(req, res, authService, pizzaRepository, cartService, creditNoteService);
   };
 
   return { requestListener };
@@ -41,6 +58,7 @@ async function handleRequest(
   authService: AuthService,
   pizzaRepository: PizzaRepository,
   cartService: CartService,
+  creditNoteService: CreditNoteService,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -66,11 +84,27 @@ async function handleRequest(
       return;
     }
 
+    const creditNoteMatch = url.pathname.match(/^\/credit-notes\/([^/]+)$/);
+    if (method === "GET" && creditNoteMatch) {
+      const result = handleGetCreditNote(creditNoteService, creditNoteMatch[1]);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    const disbursementMatch = url.pathname.match(/^\/disbursement-records\/([^/]+)$/);
+    if (method === "GET" && disbursementMatch) {
+      const result = handleGetDisbursementRecord(creditNoteService, disbursementMatch[1]);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
     if (
       route !== "POST /auth/login" &&
       route !== "POST /auth/refresh" &&
       route !== "POST /auth/logout" &&
-      route !== "POST /cart/items"
+      route !== "POST /cart/items" &&
+      route !== "POST /refunds" &&
+      route !== "POST /cancellations/disbursements"
     ) {
       sendJson(res, 404, { error: "not found" });
       return;
@@ -92,6 +126,18 @@ async function handleRequest(
 
     if (route === "POST /cart/items") {
       const result = handleAddToCart(cartService, req.headers.authorization, body);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "POST /refunds") {
+      const result = handlePostRefund(creditNoteService, body);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "POST /cancellations/disbursements") {
+      const result = handlePostCancellationDisbursement(creditNoteService, body);
       sendJson(res, result.status, result.body);
       return;
     }
