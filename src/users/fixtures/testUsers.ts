@@ -15,6 +15,8 @@ const testUserSeeds: Array<Omit<User, "passwordHash">> = [
   { id: "user-customer-1", username: "customer1", role: "customer" },
   { id: "user-provider-1", username: "provider1", role: "provider" },
   { id: "user-admin-1", username: "admin1", role: "admin" },
+  { id: "user-customer-2", username: "customer2", role: "customer" },
+  { id: "user-provider-2", username: "provider2", role: "provider" },
 ];
 
 export const testUsers: User[] = await Promise.all(
