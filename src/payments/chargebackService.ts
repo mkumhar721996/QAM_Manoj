@@ -1,6 +1,11 @@
 import type { AuditLogRepository } from "./auditLogRepository.ts";
 import type { NotificationService } from "./notificationService.ts";
-import type { ChargebackReversal, ChargebackWebhookEvent, ReversalAction } from "./paymentsModel.ts";
+import type {
+  ChargebackReversal,
+  ChargebackWebhookEvent,
+  DisbursementStatus,
+  ReversalAction,
+} from "./paymentsModel.ts";
 import type { PayoutRepository } from "./payoutRepository.ts";
 import type { ReversalRepository } from "./reversalRepository.ts";
 import type { TransactionRepository } from "./transactionRepository.ts";
@@ -29,6 +34,17 @@ export class ChargebackService {
   }
 
   processChargeback(event: ChargebackWebhookEvent, now: number = Date.now()): ChargebackReversal {
+    const existingReversal = this.reversalRepository.findByChargebackId(event.id);
+    if (existingReversal) {
+      console.warn({
+        level: "warn",
+        event: "stripe_chargeback_duplicate_event",
+        chargebackId: event.id,
+        timestamp: now,
+      });
+      return existingReversal;
+    }
+
     const transaction = this.transactionRepository.findByStripeChargeId(event.stripeChargeId);
     if (!transaction) {
       throw new TransactionNotFoundError(`No transaction found for stripe charge id ${event.stripeChargeId}`);
@@ -53,16 +69,36 @@ export class ChargebackService {
       action,
     });
 
-    this.notificationService.notifyAdmin(reversal);
-    this.notificationService.notifyProvider(reversal);
+    this.sendNotification("admin", () => this.notificationService.notifyAdmin(reversal), reversal, now);
+    this.sendNotification("provider", () => this.notificationService.notifyProvider(reversal), reversal, now);
 
     return reversal;
+  }
+
+  private sendNotification(
+    recipientRole: "admin" | "provider",
+    send: () => void,
+    reversal: ChargebackReversal,
+    now: number,
+  ): void {
+    try {
+      send();
+    } catch (err) {
+      console.error({
+        level: "error",
+        event: "notification_send_failed",
+        recipientRole,
+        chargebackId: reversal.chargebackId,
+        error: err instanceof Error ? err.message : String(err),
+        timestamp: now,
+      });
+    }
   }
 
   private reverseDisbursement(
     providerId: string,
     chargebackAmount: number,
-    disbursementStatus: "pending_payout" | "disbursed",
+    disbursementStatus: DisbursementStatus,
   ): ReversalAction {
     const pendingPayout = this.payoutRepository.findPendingByProviderId(providerId);
     if (pendingPayout && pendingPayout.amount >= chargebackAmount) {

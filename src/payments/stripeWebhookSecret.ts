@@ -1,6 +1,9 @@
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-if (!STRIPE_WEBHOOK_SECRET) {
-  throw new Error("STRIPE_WEBHOOK_SECRET environment variable must be set");
-}
+export class StripeWebhookSecretMissingError extends Error {}
 
-export { STRIPE_WEBHOOK_SECRET };
+export function getStripeWebhookSecret(): string {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new StripeWebhookSecretMissingError("STRIPE_WEBHOOK_SECRET environment variable must be set");
+  }
+  return secret;
+}

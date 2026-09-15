@@ -10,4 +10,8 @@ export class ReversalRepository {
   findAll(): ChargebackReversal[] {
     return this.reversals;
   }
+
+  findByChargebackId(chargebackId: string): ChargebackReversal | undefined {
+    return this.reversals.find((reversal) => reversal.chargebackId === chargebackId);
+  }
 }

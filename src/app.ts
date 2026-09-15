@@ -16,7 +16,7 @@ import { NotificationRepository } from "./payments/notificationRepository.ts";
 import { NotificationService } from "./payments/notificationService.ts";
 import { ChargebackService } from "./payments/chargebackService.ts";
 import { handleChargebackWebhook } from "./payments/chargebackController.ts";
-import { STRIPE_WEBHOOK_SECRET } from "./payments/stripeWebhookSecret.ts";
+import { getStripeWebhookSecret, StripeWebhookSecretMissingError } from "./payments/stripeWebhookSecret.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
@@ -106,14 +106,45 @@ async function handleRequest(
     }
 
     if (route === "POST /webhooks/stripe/chargebacks") {
+      console.log({ level: "info", event: "stripe_webhook_received", route, timestamp: Date.now() });
+
+      let webhookSecret: string;
+      try {
+        webhookSecret = getStripeWebhookSecret();
+      } catch (err) {
+        if (err instanceof StripeWebhookSecretMissingError) {
+          console.error({
+            level: "error",
+            event: "stripe_webhook_secret_missing",
+            error: err.message,
+            timestamp: Date.now(),
+          });
+          sendJson(res, 500, { error: "stripe webhook is not configured" });
+          return;
+        }
+        throw err;
+      }
+
       const rawBody = await readRawBody(req);
       const signatureHeader = req.headers["stripe-signature"];
       const result = handleChargebackWebhook(
         chargebackService,
         rawBody,
         Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader,
-        STRIPE_WEBHOOK_SECRET,
+        webhookSecret,
       );
+
+      const responseLog: Record<string, unknown> = {
+        level: result.status === 200 ? "info" : "warn",
+        event: "stripe_webhook_processed",
+        status: result.status,
+        timestamp: Date.now(),
+      };
+      if (result.status === 200) {
+        Object.assign(responseLog, result.body);
+      }
+      console.log(responseLog);
+
       sendJson(res, result.status, result.body);
       return;
     }
