@@ -2,7 +2,7 @@ import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { BookingRepository } from "../src/booking/bookingRepository.ts";
 import { PaymentAuditLogRepository } from "../src/payments/paymentAuditLogRepository.ts";
-import { PaymentService } from "../src/payments/paymentService.ts";
+import { BookingOwnershipError, PaymentService } from "../src/payments/paymentService.ts";
 import type { PaymentAuthorization, PaymentGateway } from "../src/payments/paymentGateway.ts";
 import type { NotificationService } from "../src/notifications/notificationService.ts";
 
@@ -56,12 +56,12 @@ async function flushMicrotasks(): Promise<void> {
   }
 }
 
-function setUp(gateway: FakeGateway) {
+function setUp(gateway: FakeGateway, customerId: string = "user-1") {
   const bookingRepository = new BookingRepository();
   const auditLog = new PaymentAuditLogRepository();
   const notificationService = new FakeNotificationService();
   const paymentService = new PaymentService(gateway, bookingRepository, auditLog, notificationService);
-  const booking = bookingRepository.create({ customerId: "user-customer-1", amount: 2500, currency: "usd" });
+  const booking = bookingRepository.create({ customerId, amount: 2500, currency: "usd" });
   return { bookingRepository, auditLog, notificationService, paymentService, booking };
 }
 
@@ -156,7 +156,7 @@ test("AC8: every capture attempt is logged with a timestamp and actor id", async
   mock.timers.enable({ apis: ["setTimeout", "Date"] });
   try {
     const gateway = new FakeGateway({ captureBehavior: "fail-then-succeed" });
-    const { paymentService, auditLog, booking } = setUp(gateway);
+    const { paymentService, auditLog, booking } = setUp(gateway, "actor-42");
 
     const confirmPromise = paymentService.confirmBooking(booking.id, "tok_visa", "actor-42");
     await flushMicrotasks();
@@ -182,6 +182,19 @@ test("AC9: on a successful capture, both an email and an SMS confirmation are se
 
   assert.deepEqual(notificationService.emailsSent, [{ customerId: booking.customerId, bookingId: booking.id }]);
   assert.deepEqual(notificationService.smsSent, [{ customerId: booking.customerId, bookingId: booking.id }]);
+});
+
+test("a caller who does not own the booking cannot confirm it or trigger a charge", async () => {
+  const gateway = new FakeGateway();
+  const { paymentService, bookingRepository, booking } = setUp(gateway);
+
+  await assert.rejects(
+    () => paymentService.confirmBooking(booking.id, "tok_visa", "someone-else"),
+    BookingOwnershipError,
+  );
+
+  assert.equal(gateway.authorizeCalls.length, 0);
+  assert.equal(bookingRepository.findById(booking.id)?.status, "awaiting_confirmation");
 });
 
 test("AC9: on total capture failure, no email or SMS confirmation is sent", async () => {

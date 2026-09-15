@@ -1,7 +1,7 @@
 import type { ControllerResponse } from "../auth/authController.ts";
 import { verifyAccessToken } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
-import { BookingNotFoundError } from "../payments/paymentService.ts";
+import { BookingNotFoundError, BookingOwnershipError } from "../payments/paymentService.ts";
 import type { PaymentService } from "../payments/paymentService.ts";
 
 const RAW_CARD_DATA_FIELDS = ["card_number", "cvc", "cvv", "expiry_month", "expiry_year"];
@@ -38,6 +38,9 @@ export async function handleConfirmBooking(
   } catch (err) {
     if (err instanceof BookingNotFoundError) {
       return { status: 404, body: { error: err.message } };
+    }
+    if (err instanceof BookingOwnershipError) {
+      return { status: 403, body: { error: "you do not have permission to confirm this booking" } };
     }
     throw err;
   }

@@ -7,6 +7,7 @@ import type { PaymentGateway } from "./paymentGateway.ts";
 export const CAPTURE_RETRY_DELAY_MS = 30_000;
 
 export class BookingNotFoundError extends Error {}
+export class BookingOwnershipError extends Error {}
 
 export class PaymentService {
   private gateway: PaymentGateway;
@@ -30,6 +31,9 @@ export class PaymentService {
     const booking = this.bookingRepository.findById(bookingId);
     if (!booking) {
       throw new BookingNotFoundError(`No booking found with id ${bookingId}`);
+    }
+    if (booking.customerId !== actorId) {
+      throw new BookingOwnershipError(`actorId ${actorId} does not own booking ${bookingId}`);
     }
 
     const authorization = await this.gateway.authorize(paymentToken, booking.amount, booking.currency);

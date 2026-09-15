@@ -19,11 +19,11 @@ class FakeGateway implements PaymentGateway {
   }
 }
 
-async function login(baseUrl: string): Promise<{ access_token: string }> {
+async function login(baseUrl: string, username: string = "customer1"): Promise<{ access_token: string }> {
   const res = await fetch(`${baseUrl}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD }),
+    body: JSON.stringify({ username, password: TEST_PASSWORD }),
   });
   return (await res.json()) as { access_token: string };
 }
@@ -73,6 +73,24 @@ test("AC1: a confirmation request with only a payment token is accepted and forw
 
     assert.equal(res.status, 200);
     assert.equal(fakeGateway.authorizeCalls[0].paymentToken, "tok_visa");
+  } finally {
+    await server.close();
+  }
+});
+
+test("a caller who does not own the booking is forbidden from confirming it, and no charge is attempted", async () => {
+  const bookingRepository = new BookingRepository();
+  const fakeGateway = new FakeGateway();
+  const server = await startTestServer({ bookingRepository, paymentGateway: fakeGateway });
+  try {
+    const { access_token: otherUsersAccessToken } = await login(server.baseUrl, "provider1");
+    const booking = bookingRepository.create({ customerId: "user-customer-1", amount: 2500, currency: "usd" });
+
+    const res = await confirmBooking(server.baseUrl, otherUsersAccessToken, booking.id, { payment_token: "tok_visa" });
+
+    assert.equal(res.status, 403);
+    assert.equal(fakeGateway.authorizeCalls.length, 0);
+    assert.equal(bookingRepository.findById(booking.id)?.status, "awaiting_confirmation");
   } finally {
     await server.close();
   }
