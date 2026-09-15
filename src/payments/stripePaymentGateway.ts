@@ -2,9 +2,9 @@ import type { PaymentAuthorization, PaymentGateway } from "./paymentGateway.ts";
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-if (!STRIPE_SECRET_KEY) {
-  throw new Error("STRIPE_SECRET_KEY environment variable must be set");
+const STRIPE_SECRET = process.env.STRIPE_SECRET;
+if (!STRIPE_SECRET) {
+  throw new Error("STRIPE_SECRET environment variable must be set");
 }
 
 export class StripeGatewayError extends Error {}
@@ -26,7 +26,7 @@ export class StripePaymentGateway implements PaymentGateway {
     const response = await fetch(`${STRIPE_API_BASE}/payment_intents`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+        Authorization: `Bearer ${STRIPE_SECRET}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body,
@@ -42,7 +42,7 @@ export class StripePaymentGateway implements PaymentGateway {
   async capture(paymentIntentId: string): Promise<void> {
     const response = await fetch(`${STRIPE_API_BASE}/payment_intents/${paymentIntentId}/capture`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+      headers: { Authorization: `Bearer ${STRIPE_SECRET}` },
     });
 
     if (!response.ok) {
