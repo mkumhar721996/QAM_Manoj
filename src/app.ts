@@ -9,6 +9,7 @@ import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
 import { InvoiceRepository } from "./invoicing/invoiceRepository.ts";
+import { testInvoices } from "./invoicing/fixtures/testInvoices.ts";
 import { CreditNoteRepository } from "./invoicing/creditNoteRepository.ts";
 import { DisbursementRecordRepository } from "./invoicing/disbursementRecordRepository.ts";
 import { CreditNoteService } from "./invoicing/creditNoteService.ts";
@@ -40,7 +41,7 @@ export function createApp(deps: AppDependencies = {}): App {
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
-  const invoiceRepository = deps.invoiceRepository ?? new InvoiceRepository();
+  const invoiceRepository = deps.invoiceRepository ?? new InvoiceRepository(testInvoices);
   const creditNoteRepository = deps.creditNoteRepository ?? new CreditNoteRepository();
   const disbursementRecordRepository = deps.disbursementRecordRepository ?? new DisbursementRecordRepository();
   const creditNoteService = new CreditNoteService(invoiceRepository, creditNoteRepository, disbursementRecordRepository);

@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { startTestServer } from "./testServer.ts";
 import { TEST_PASSWORD } from "../src/users/fixtures/testUsers.ts";
+import { CreditNoteRepository } from "../src/invoicing/creditNoteRepository.ts";
+import { DisbursementRecordRepository } from "../src/invoicing/disbursementRecordRepository.ts";
 
 async function login(baseUrl: string): Promise<{ access_token: string }> {
   const res = await fetch(`${baseUrl}/auth/login`, {
@@ -431,6 +433,78 @@ test("AC11: retrieving a disbursement record without authentication is rejected 
 
     const res = await fetch(`${server.baseUrl}/disbursement-records/${created.id}`);
     assert.equal(res.status, 401);
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC12: a customer cannot generate a credit note for an invoice belonging to another customer/provider", async () => {
+  const server = await startTestServer();
+  try {
+    const { access_token: accessToken } = await login(server.baseUrl);
+    const res = await postRefund(server.baseUrl, accessToken, {
+      invoice_number: "INV-2001",
+      transaction_id: "txn-900",
+      refund_amount: 10,
+      transaction_date: "2026-09-14T00:00:00.000Z",
+    });
+    assert.equal(res.status, 403);
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC12: a customer cannot generate a disbursement record for an invoice belonging to another customer/provider", async () => {
+  const server = await startTestServer();
+  try {
+    const { access_token: accessToken } = await login(server.baseUrl);
+    const res = await postDisbursement(server.baseUrl, accessToken, {
+      cancellation_event_id: "cancel-92",
+      invoice_number: "INV-2001",
+      provider_id: "provider-2",
+      amount: 10,
+    });
+    assert.equal(res.status, 403);
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC12: a customer cannot retrieve a credit note belonging to another customer's invoice", async () => {
+  const creditNoteRepository = new CreditNoteRepository();
+  creditNoteRepository.add({
+    id: "other-customer-credit-note",
+    invoiceNumber: "INV-2001",
+    transactionId: "txn-901",
+    refundAmount: 20,
+    transactionDate: "2026-09-14T00:00:00.000Z",
+    createdAt: Date.now(),
+  });
+  const server = await startTestServer({ creditNoteRepository });
+  try {
+    const { access_token: accessToken } = await login(server.baseUrl);
+    const res = await getCreditNote(server.baseUrl, accessToken, "other-customer-credit-note");
+    assert.equal(res.status, 403);
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC12: a customer cannot retrieve a disbursement record belonging to another provider's invoice", async () => {
+  const disbursementRecordRepository = new DisbursementRecordRepository();
+  disbursementRecordRepository.add({
+    id: "other-provider-disbursement",
+    cancellationEventId: "cancel-93",
+    invoiceNumber: "INV-2001",
+    providerId: "provider-2",
+    amount: 15,
+    createdAt: Date.now(),
+  });
+  const server = await startTestServer({ disbursementRecordRepository });
+  try {
+    const { access_token: accessToken } = await login(server.baseUrl);
+    const res = await getDisbursementRecord(server.baseUrl, accessToken, "other-provider-disbursement");
+    assert.equal(res.status, 403);
   } finally {
     await server.close();
   }
