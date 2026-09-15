@@ -8,16 +8,23 @@ import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { DeliveryLogRepository } from "./notifications/deliveryLogRepository.ts";
+import { ConsoleEmailSender } from "./notifications/emailSender.ts";
+import type { EmailSender } from "./notifications/emailSender.ts";
+import { NotificationService } from "./notifications/notificationService.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
   sessionRepository?: SessionRepository;
   pizzaRepository?: PizzaRepository;
   cartRepository?: CartRepository;
+  deliveryLogRepository?: DeliveryLogRepository;
+  emailSender?: EmailSender;
 }
 
 export interface App {
   requestListener: RequestListener;
+  notificationService: NotificationService;
 }
 
 export function createApp(deps: AppDependencies = {}): App {
@@ -27,12 +34,15 @@ export function createApp(deps: AppDependencies = {}): App {
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
+  const deliveryLogRepository = deps.deliveryLogRepository ?? new DeliveryLogRepository();
+  const emailSender = deps.emailSender ?? new ConsoleEmailSender();
+  const notificationService = new NotificationService(userRepository, deliveryLogRepository, emailSender);
 
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
     void handleRequest(req, res, authService, pizzaRepository, cartService);
   };
 
-  return { requestListener };
+  return { requestListener, notificationService };
 }
 
 async function handleRequest(
