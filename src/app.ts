@@ -8,12 +8,20 @@ import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { ProviderRepository } from "./providers/providerRepository.ts";
+import { SlotRepository } from "./scheduling/slotRepository.ts";
+import { HoldConfigRepository } from "./scheduling/holdConfigRepository.ts";
+import { SlotService } from "./scheduling/slotService.ts";
+import { handleHoldSlot, handleListSlots } from "./scheduling/slotController.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
   sessionRepository?: SessionRepository;
   pizzaRepository?: PizzaRepository;
   cartRepository?: CartRepository;
+  providerRepository?: ProviderRepository;
+  slotRepository?: SlotRepository;
+  holdConfigRepository?: HoldConfigRepository;
 }
 
 export interface App {
@@ -28,8 +36,13 @@ export function createApp(deps: AppDependencies = {}): App {
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
 
+  const providerRepository = deps.providerRepository ?? new ProviderRepository();
+  const slotRepository = deps.slotRepository ?? new SlotRepository();
+  const holdConfigRepository = deps.holdConfigRepository ?? new HoldConfigRepository();
+  const slotService = new SlotService(slotRepository, providerRepository, holdConfigRepository);
+
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
-    void handleRequest(req, res, authService, pizzaRepository, cartService);
+    void handleRequest(req, res, authService, pizzaRepository, cartService, slotService);
   };
 
   return { requestListener };
@@ -41,6 +54,7 @@ async function handleRequest(
   authService: AuthService,
   pizzaRepository: PizzaRepository,
   cartService: CartService,
+  slotService: SlotService,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -62,6 +76,20 @@ async function handleRequest(
 
     if (route === "GET /cart") {
       const result = handleGetCart(cartService, req.headers.authorization);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    const slotsMatch = method === "GET" && url.pathname.match(/^\/providers\/([^/]+)\/slots$/);
+    if (slotsMatch) {
+      const result = handleListSlots(slotService, slotsMatch[1]);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    const holdMatch = method === "POST" && url.pathname.match(/^\/providers\/([^/]+)\/slots\/([^/]+)\/hold$/);
+    if (holdMatch) {
+      const result = handleHoldSlot(slotService, holdMatch[1], holdMatch[2], req.headers.authorization);
       sendJson(res, result.status, result.body);
       return;
     }
