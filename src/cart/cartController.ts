@@ -1,13 +1,8 @@
 import type { ControllerResponse } from "../auth/authController.ts";
-import { verifyAccessToken } from "../auth/tokenService.ts";
+import { extractBearerPayload } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
 import type { PizzaRepository } from "../pizzas/pizzaRepository.ts";
 import { CartService, InvalidCustomisationError, PizzaNotFoundError } from "./cartService.ts";
-
-function extractBearerPayload(authorizationHeader: string | undefined) {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
-  return token ? verifyAccessToken(token) : null;
-}
 
 export function handleGetPizza(pizzaRepository: PizzaRepository, pizzaId: string): ControllerResponse {
   const pizza = pizzaRepository.findById(pizzaId);

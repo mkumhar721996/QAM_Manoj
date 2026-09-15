@@ -1,13 +1,8 @@
 import type { ControllerResponse } from "../auth/authController.ts";
-import { verifyAccessToken } from "../auth/tokenService.ts";
+import { extractBearerPayload } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
 import type { CancellationPaymentService } from "./cancellationPaymentService.ts";
 import { InvalidCancellationEventError } from "./cancellationPaymentService.ts";
-
-function extractBearerPayload(authorizationHeader: string | undefined) {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
-  return token ? verifyAccessToken(token) : null;
-}
 
 export async function handleCancellationEvent(
   service: CancellationPaymentService,
@@ -74,6 +69,11 @@ export async function handleCancellationEvent(
     if (err instanceof InvalidCancellationEventError) {
       return { status: 400, body: { error: err.message } };
     }
+    console.error(
+      `cancellation payment failed for bookingId=${bookingId} outcome=${outcome} ` +
+        `refundAmountCents=${refundAmountCents} nonRefundableAmountCents=${nonRefundableAmountCents}:`,
+      err,
+    );
     throw err;
   }
 }

@@ -27,6 +27,14 @@ export interface App {
   requestListener: RequestListener;
 }
 
+function createStripeGateway(): StripeGateway {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error("STRIPE_SECRET_KEY environment variable must be set");
+  }
+  return new StripeApiGateway(secretKey);
+}
+
 export function createApp(deps: AppDependencies = {}): App {
   const userRepository = deps.userRepository ?? new UserRepository();
   const sessionRepository = deps.sessionRepository ?? new SessionRepository();
@@ -35,7 +43,7 @@ export function createApp(deps: AppDependencies = {}): App {
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
   const cancellationLogRepository = deps.cancellationLogRepository ?? new CancellationLogRepository();
-  const stripeGateway = deps.stripeGateway ?? new StripeApiGateway(process.env.STRIPE_SECRET_KEY ?? "");
+  const stripeGateway = deps.stripeGateway ?? createStripeGateway();
   const cancellationPaymentService = new CancellationPaymentService(stripeGateway, cancellationLogRepository);
 
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {

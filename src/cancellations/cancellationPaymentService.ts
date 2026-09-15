@@ -33,14 +33,6 @@ export class CancellationPaymentService {
 
     const refund = await this.stripeGateway.refund(event.paymentIntentId, event.refundAmountCents);
 
-    let disbursement: { id: string; amountCents: number } | undefined;
-    if (event.outcome === "partial_refund") {
-      const disbursementAmountCents = event.nonRefundableAmountCents - event.serviceFeeCents;
-      if (disbursementAmountCents > 0) {
-        disbursement = await this.stripeGateway.disburseToProvider(event.providerId!, disbursementAmountCents);
-      }
-    }
-
     this.cancellationLogRepository.add({
       bookingId: event.bookingId,
       actorId: event.actorId,
@@ -48,6 +40,14 @@ export class CancellationPaymentService {
       nonRefundableAmountCents: event.nonRefundableAmountCents,
       timestamp: now,
     });
+
+    let disbursement: { id: string; amountCents: number } | undefined;
+    if (event.outcome === "partial_refund") {
+      const disbursementAmountCents = event.nonRefundableAmountCents - event.serviceFeeCents;
+      if (disbursementAmountCents > 0) {
+        disbursement = await this.stripeGateway.disburseToProvider(event.providerId!, disbursementAmountCents);
+      }
+    }
 
     return {
       refundId: refund.id,
