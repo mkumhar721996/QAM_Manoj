@@ -3,7 +3,7 @@ import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
 import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
-import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
+import { PayloadTooLargeError, headerValue, parseJsonBody, readRawBody, sendJson } from "./httpUtils.ts";
 import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
@@ -106,7 +106,8 @@ async function handleRequest(
       return;
     }
 
-    const body = await readJsonBody(req);
+    const rawBody = await readRawBody(req);
+    const body = parseJsonBody(rawBody);
 
     if (route === "POST /auth/login") {
       const result = await handleLogin(authService, body);
@@ -127,13 +128,23 @@ async function handleRequest(
     }
 
     if (route === "POST /webhooks/booking-service-completed") {
-      const result = handleServiceCompletedWebhook(disbursementService, body);
+      const result = handleServiceCompletedWebhook(
+        disbursementService,
+        headerValue(req.headers["x-webhook-signature"]),
+        rawBody,
+        body,
+      );
       sendJson(res, result.status, result.body);
       return;
     }
 
     if (route === "POST /webhooks/stripe/dispute") {
-      const result = handleStripeDisputeWebhook(disbursementService, body);
+      const result = handleStripeDisputeWebhook(
+        disbursementService,
+        headerValue(req.headers["stripe-signature"]),
+        rawBody,
+        body,
+      );
       sendJson(res, result.status, result.body);
       return;
     }

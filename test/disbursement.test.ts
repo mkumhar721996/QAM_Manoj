@@ -8,6 +8,17 @@ import { NotificationRepository } from "../src/disbursements/notificationReposit
 import { InMemoryPaymentGateway } from "../src/disbursements/paymentGateway.ts";
 import type { DisbursementPaymentInput, DisbursementPaymentResult, PaymentGateway } from "../src/disbursements/paymentGateway.ts";
 import { DisbursementService } from "../src/disbursements/disbursementService.ts";
+import { computeWebhookSignature } from "../src/disbursements/webhookAuth.ts";
+
+const BOOKING_SERVICE_WEBHOOK_SECRET = process.env.BOOKING_SERVICE_WEBHOOK_SECRET!;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
+
+function signedHeaders(headerName: string, secret: string, rawBody: string): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    [headerName]: computeWebhookSignature(secret, rawBody),
+  };
+}
 
 class ScriptedPaymentGateway implements PaymentGateway {
   calls: DisbursementPaymentInput[] = [];
@@ -363,10 +374,15 @@ test("webhook: booking-service-completed starts a dispute window via HTTP", asyn
   const disbursementRepository = new DisbursementRepository();
   const server = await startTestServer({ disbursementRepository });
   try {
+    const rawBody = JSON.stringify({
+      booking_id: "booking-webhook-1",
+      provider_id: "user-provider-1",
+      total_amount: 100,
+    });
     const res = await fetch(`${server.baseUrl}/webhooks/booking-service-completed`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ booking_id: "booking-webhook-1", provider_id: "user-provider-1", total_amount: 100 }),
+      headers: signedHeaders("X-Webhook-Signature", BOOKING_SERVICE_WEBHOOK_SECRET, rawBody),
+      body: rawBody,
     });
     assert.equal(res.status, 202);
     const disbursement = disbursementRepository.findByBookingId("booking-webhook-1")!;
@@ -376,23 +392,87 @@ test("webhook: booking-service-completed starts a dispute window via HTTP", asyn
   }
 });
 
+test("webhook: booking-service-completed rejects a request without a valid signature", async () => {
+  const disbursementRepository = new DisbursementRepository();
+  const server = await startTestServer({ disbursementRepository });
+  try {
+    const rawBody = JSON.stringify({
+      booking_id: "booking-webhook-unsigned",
+      provider_id: "user-provider-1",
+      total_amount: 100,
+    });
+
+    const noSignatureRes = await fetch(`${server.baseUrl}/webhooks/booking-service-completed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: rawBody,
+    });
+    assert.equal(noSignatureRes.status, 401);
+
+    const wrongSignatureRes = await fetch(`${server.baseUrl}/webhooks/booking-service-completed`, {
+      method: "POST",
+      headers: signedHeaders("X-Webhook-Signature", "not-the-real-secret", rawBody),
+      body: rawBody,
+    });
+    assert.equal(wrongSignatureRes.status, 401);
+
+    assert.equal(disbursementRepository.findByBookingId("booking-webhook-unsigned"), undefined);
+  } finally {
+    await server.close();
+  }
+});
+
 test("webhook: stripe dispute marks the disbursement as disputed via HTTP", async () => {
   const disbursementRepository = new DisbursementRepository();
   const server = await startTestServer({ disbursementRepository });
   try {
+    const completedRawBody = JSON.stringify({
+      booking_id: "booking-webhook-2",
+      provider_id: "user-provider-1",
+      total_amount: 100,
+    });
     await fetch(`${server.baseUrl}/webhooks/booking-service-completed`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ booking_id: "booking-webhook-2", provider_id: "user-provider-1", total_amount: 100 }),
+      headers: signedHeaders("X-Webhook-Signature", BOOKING_SERVICE_WEBHOOK_SECRET, completedRawBody),
+      body: completedRawBody,
     });
 
+    const disputeRawBody = JSON.stringify({ type: "charge.dispute.created", booking_id: "booking-webhook-2" });
     const res = await fetch(`${server.baseUrl}/webhooks/stripe/dispute`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "charge.dispute.created", booking_id: "booking-webhook-2" }),
+      headers: signedHeaders("Stripe-Signature", STRIPE_WEBHOOK_SECRET, disputeRawBody),
+      body: disputeRawBody,
     });
     assert.equal(res.status, 200);
     assert.equal(disbursementRepository.findByBookingId("booking-webhook-2")!.disputeRaised, true);
+  } finally {
+    await server.close();
+  }
+});
+
+test("webhook: stripe dispute rejects a request without a valid signature", async () => {
+  const disbursementRepository = new DisbursementRepository();
+  const server = await startTestServer({ disbursementRepository });
+  try {
+    const completedRawBody = JSON.stringify({
+      booking_id: "booking-webhook-3",
+      provider_id: "user-provider-1",
+      total_amount: 100,
+    });
+    await fetch(`${server.baseUrl}/webhooks/booking-service-completed`, {
+      method: "POST",
+      headers: signedHeaders("X-Webhook-Signature", BOOKING_SERVICE_WEBHOOK_SECRET, completedRawBody),
+      body: completedRawBody,
+    });
+
+    const disputeRawBody = JSON.stringify({ type: "charge.dispute.created", booking_id: "booking-webhook-3" });
+    const res = await fetch(`${server.baseUrl}/webhooks/stripe/dispute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: disputeRawBody,
+    });
+    assert.equal(res.status, 401);
+    assert.equal(disbursementRepository.findByBookingId("booking-webhook-3")!.disputeRaised, false);
   } finally {
     await server.close();
   }
