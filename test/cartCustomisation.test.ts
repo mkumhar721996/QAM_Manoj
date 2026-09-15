@@ -9,6 +9,7 @@ async function login(baseUrl: string): Promise<{ access_token: string }> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD }),
   });
+  assert.equal(res.status, 200);
   return (await res.json()) as { access_token: string };
 }
 

@@ -1,9 +1,23 @@
 import type { ControllerResponse } from "../auth/authController.ts";
+import { verifyAccessToken } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
 import type { CreditNote, DisbursementRecord } from "./creditNoteModel.ts";
 import { CreditNoteService, InvoiceNotFoundError } from "./creditNoteService.ts";
 
-export function handlePostRefund(creditNoteService: CreditNoteService, requestBody: unknown): ControllerResponse {
+function isAuthenticated(authorizationHeader: string | undefined): boolean {
+  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
+  return token !== undefined && verifyAccessToken(token) !== null;
+}
+
+export function handlePostRefund(
+  creditNoteService: CreditNoteService,
+  authorizationHeader: string | undefined,
+  requestBody: unknown,
+): ControllerResponse {
+  if (!isAuthenticated(authorizationHeader)) {
+    return { status: 401, body: { error: "missing or invalid authorization" } };
+  }
+
   const {
     invoice_number: invoiceNumber,
     transaction_id: transactionId,
@@ -39,8 +53,13 @@ export function handlePostRefund(creditNoteService: CreditNoteService, requestBo
 
 export function handlePostCancellationDisbursement(
   creditNoteService: CreditNoteService,
+  authorizationHeader: string | undefined,
   requestBody: unknown,
 ): ControllerResponse {
+  if (!isAuthenticated(authorizationHeader)) {
+    return { status: 401, body: { error: "missing or invalid authorization" } };
+  }
+
   const {
     cancellation_event_id: cancellationEventId,
     invoice_number: invoiceNumber,
@@ -74,7 +93,15 @@ export function handlePostCancellationDisbursement(
   }
 }
 
-export function handleGetCreditNote(creditNoteService: CreditNoteService, id: string): ControllerResponse {
+export function handleGetCreditNote(
+  creditNoteService: CreditNoteService,
+  authorizationHeader: string | undefined,
+  id: string,
+): ControllerResponse {
+  if (!isAuthenticated(authorizationHeader)) {
+    return { status: 401, body: { error: "missing or invalid authorization" } };
+  }
+
   const creditNote = creditNoteService.getCreditNote(id);
   if (!creditNote) {
     return { status: 404, body: { error: "credit note not found" } };
@@ -82,7 +109,15 @@ export function handleGetCreditNote(creditNoteService: CreditNoteService, id: st
   return { status: 200, body: toCreditNoteBody(creditNote) };
 }
 
-export function handleGetDisbursementRecord(creditNoteService: CreditNoteService, id: string): ControllerResponse {
+export function handleGetDisbursementRecord(
+  creditNoteService: CreditNoteService,
+  authorizationHeader: string | undefined,
+  id: string,
+): ControllerResponse {
+  if (!isAuthenticated(authorizationHeader)) {
+    return { status: 401, body: { error: "missing or invalid authorization" } };
+  }
+
   const record = creditNoteService.getDisbursementRecord(id);
   if (!record) {
     return { status: 404, body: { error: "disbursement record not found" } };

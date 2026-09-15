@@ -86,14 +86,14 @@ async function handleRequest(
 
     const creditNoteMatch = url.pathname.match(/^\/credit-notes\/([^/]+)$/);
     if (method === "GET" && creditNoteMatch) {
-      const result = handleGetCreditNote(creditNoteService, creditNoteMatch[1]);
+      const result = handleGetCreditNote(creditNoteService, req.headers.authorization, creditNoteMatch[1]);
       sendJson(res, result.status, result.body);
       return;
     }
 
     const disbursementMatch = url.pathname.match(/^\/disbursement-records\/([^/]+)$/);
     if (method === "GET" && disbursementMatch) {
-      const result = handleGetDisbursementRecord(creditNoteService, disbursementMatch[1]);
+      const result = handleGetDisbursementRecord(creditNoteService, req.headers.authorization, disbursementMatch[1]);
       sendJson(res, result.status, result.body);
       return;
     }
@@ -131,13 +131,13 @@ async function handleRequest(
     }
 
     if (route === "POST /refunds") {
-      const result = handlePostRefund(creditNoteService, body);
+      const result = handlePostRefund(creditNoteService, req.headers.authorization, body);
       sendJson(res, result.status, result.body);
       return;
     }
 
     if (route === "POST /cancellations/disbursements") {
-      const result = handlePostCancellationDisbursement(creditNoteService, body);
+      const result = handlePostCancellationDisbursement(creditNoteService, req.headers.authorization, body);
       sendJson(res, result.status, result.body);
       return;
     }
