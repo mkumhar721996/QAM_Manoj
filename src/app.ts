@@ -8,12 +8,21 @@ import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { BookingRepository } from "./bookings/bookingRepository.ts";
+import { BookingService } from "./bookings/bookingService.ts";
+import {
+  handleDeleteBooking,
+  handleGetBooking,
+  handleGetCustomerBookingHistory,
+  handleGetProviderBookingHistory,
+} from "./bookings/bookingController.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
   sessionRepository?: SessionRepository;
   pizzaRepository?: PizzaRepository;
   cartRepository?: CartRepository;
+  bookingRepository?: BookingRepository;
 }
 
 export interface App {
@@ -27,9 +36,11 @@ export function createApp(deps: AppDependencies = {}): App {
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
+  const bookingRepository = deps.bookingRepository ?? new BookingRepository();
+  const bookingService = new BookingService(bookingRepository, userRepository);
 
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
-    void handleRequest(req, res, authService, pizzaRepository, cartService);
+    void handleRequest(req, res, authService, pizzaRepository, cartService, bookingService);
   };
 
   return { requestListener };
@@ -41,6 +52,7 @@ async function handleRequest(
   authService: AuthService,
   pizzaRepository: PizzaRepository,
   cartService: CartService,
+  bookingService: BookingService,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -62,6 +74,31 @@ async function handleRequest(
 
     if (route === "GET /cart") {
       const result = handleGetCart(cartService, req.headers.authorization);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "GET /bookings/customer/history") {
+      const result = handleGetCustomerBookingHistory(bookingService, req.headers.authorization);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "GET /bookings/provider/history") {
+      const result = handleGetProviderBookingHistory(bookingService, req.headers.authorization);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    const bookingMatch = url.pathname.match(/^\/bookings\/([^/]+)$/);
+    if (method === "GET" && bookingMatch) {
+      const result = handleGetBooking(bookingService, req.headers.authorization, bookingMatch[1]);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (method === "DELETE" && bookingMatch) {
+      const result = handleDeleteBooking(bookingService, req.headers.authorization, bookingMatch[1]);
       sendJson(res, result.status, result.body);
       return;
     }
