@@ -54,6 +54,26 @@ test("AC4: shoe size and penetration threshold are overridden by external config
   assert.equal(shoe.size(), 208);
 });
 
+test("AC4: loadShoeConfig rejects a non-numeric SHOE_NUMBER_OF_DECKS", () => {
+  const env = { SHOE_NUMBER_OF_DECKS: "invalid" } as NodeJS.ProcessEnv;
+  assert.throws(() => loadShoeConfig(env));
+});
+
+test("AC4: loadShoeConfig rejects a zero or negative SHOE_NUMBER_OF_DECKS", () => {
+  assert.throws(() => loadShoeConfig({ SHOE_NUMBER_OF_DECKS: "0" } as NodeJS.ProcessEnv));
+  assert.throws(() => loadShoeConfig({ SHOE_NUMBER_OF_DECKS: "-1" } as NodeJS.ProcessEnv));
+});
+
+test("AC4: loadShoeConfig rejects a non-integer SHOE_NUMBER_OF_DECKS", () => {
+  assert.throws(() => loadShoeConfig({ SHOE_NUMBER_OF_DECKS: "1.5" } as NodeJS.ProcessEnv));
+});
+
+test("AC4: loadShoeConfig rejects a non-numeric or non-positive SHOE_PENETRATION_THRESHOLD", () => {
+  assert.throws(() => loadShoeConfig({ SHOE_PENETRATION_THRESHOLD: "invalid" } as NodeJS.ProcessEnv));
+  assert.throws(() => loadShoeConfig({ SHOE_PENETRATION_THRESHOLD: "0" } as NodeJS.ProcessEnv));
+  assert.throws(() => loadShoeConfig({ SHOE_PENETRATION_THRESHOLD: "-5" } as NodeJS.ProcessEnv));
+});
+
 test("AC5: shoe is not reshuffled when dealt count is below the penetration threshold", () => {
   const shoe = new Shoe({ numberOfDecks: 1, penetrationThreshold: 2 });
   shoe.deal();
