@@ -109,7 +109,7 @@ async function handleRequest(
     }
 
     if (route === "POST /payments/cancellations") {
-      const result = await handleCancellationEvent(cancellationPaymentService, body);
+      const result = await handleCancellationEvent(cancellationPaymentService, req.headers.authorization, body);
       sendJson(res, result.status, result.body);
       return;
     }

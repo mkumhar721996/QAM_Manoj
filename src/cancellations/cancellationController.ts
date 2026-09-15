@@ -1,12 +1,23 @@
 import type { ControllerResponse } from "../auth/authController.ts";
+import { verifyAccessToken } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
 import type { CancellationPaymentService } from "./cancellationPaymentService.ts";
 import { InvalidCancellationEventError } from "./cancellationPaymentService.ts";
 
+function extractBearerPayload(authorizationHeader: string | undefined) {
+  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
+  return token ? verifyAccessToken(token) : null;
+}
+
 export async function handleCancellationEvent(
   service: CancellationPaymentService,
+  authorizationHeader: string | undefined,
   requestBody: unknown,
 ): Promise<ControllerResponse> {
+  if (!extractBearerPayload(authorizationHeader)) {
+    return { status: 401, body: { error: "missing or invalid authorization" } };
+  }
+
   const {
     booking_id: bookingId,
     actor_id: actorId,
@@ -26,7 +37,10 @@ export async function handleCancellationEvent(
     typeof refundAmountCents !== "number" ||
     typeof nonRefundableAmountCents !== "number" ||
     typeof serviceFeeCents !== "number" ||
-    (providerId !== undefined && typeof providerId !== "string")
+    (providerId !== undefined && typeof providerId !== "string") ||
+    refundAmountCents < 0 ||
+    nonRefundableAmountCents < 0 ||
+    serviceFeeCents < 0
   ) {
     return { status: 400, body: { error: "invalid cancellation event payload" } };
   }
