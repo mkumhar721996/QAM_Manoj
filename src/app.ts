@@ -8,12 +8,24 @@ import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { BookingRepository } from "./booking/bookingRepository.ts";
+import { handleConfirmBooking } from "./booking/bookingController.ts";
+import type { PaymentGateway } from "./payments/paymentGateway.ts";
+import { StripePaymentGateway } from "./payments/stripePaymentGateway.ts";
+import { PaymentAuditLogRepository } from "./payments/paymentAuditLogRepository.ts";
+import { PaymentService } from "./payments/paymentService.ts";
+import type { NotificationService } from "./notifications/notificationService.ts";
+import { LoggingNotificationService } from "./notifications/notificationService.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
   sessionRepository?: SessionRepository;
   pizzaRepository?: PizzaRepository;
   cartRepository?: CartRepository;
+  bookingRepository?: BookingRepository;
+  paymentGateway?: PaymentGateway;
+  paymentAuditLogRepository?: PaymentAuditLogRepository;
+  notificationService?: NotificationService;
 }
 
 export interface App {
@@ -27,9 +39,19 @@ export function createApp(deps: AppDependencies = {}): App {
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
+  const bookingRepository = deps.bookingRepository ?? new BookingRepository();
+  const paymentGateway = deps.paymentGateway ?? new StripePaymentGateway();
+  const paymentAuditLogRepository = deps.paymentAuditLogRepository ?? new PaymentAuditLogRepository();
+  const notificationService = deps.notificationService ?? new LoggingNotificationService();
+  const paymentService = new PaymentService(
+    paymentGateway,
+    bookingRepository,
+    paymentAuditLogRepository,
+    notificationService,
+  );
 
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
-    void handleRequest(req, res, authService, pizzaRepository, cartService);
+    void handleRequest(req, res, authService, pizzaRepository, cartService, paymentService);
   };
 
   return { requestListener };
@@ -41,6 +63,7 @@ async function handleRequest(
   authService: AuthService,
   pizzaRepository: PizzaRepository,
   cartService: CartService,
+  paymentService: PaymentService,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -62,6 +85,14 @@ async function handleRequest(
 
     if (route === "GET /cart") {
       const result = handleGetCart(cartService, req.headers.authorization);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    const bookingConfirmMatch = url.pathname.match(/^\/bookings\/([^/]+)\/confirm$/);
+    if (method === "POST" && bookingConfirmMatch) {
+      const body = await readJsonBody(req);
+      const result = await handleConfirmBooking(paymentService, req.headers.authorization, bookingConfirmMatch[1], body);
       sendJson(res, result.status, result.body);
       return;
     }
