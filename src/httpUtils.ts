@@ -8,7 +8,7 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
-export function readJsonBody(req: IncomingMessage): Promise<unknown> {
+export function readRawBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let totalBytes = 0;
@@ -29,18 +29,22 @@ export function readJsonBody(req: IncomingMessage): Promise<unknown> {
         reject(new PayloadTooLargeError());
         return;
       }
-      if (chunks.length === 0) {
-        resolve(undefined);
-        return;
-      }
-      try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
-      } catch {
-        reject(new Error("Invalid JSON body"));
-      }
+      resolve(Buffer.concat(chunks).toString("utf8"));
     });
     req.on("error", reject);
   });
+}
+
+export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const raw = await readRawBody(req);
+  if (raw.length === 0) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Invalid JSON body");
+  }
 }
 
 export function asRecord(value: unknown): Record<string, unknown> {
