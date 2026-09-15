@@ -1,20 +1,15 @@
 import type { ControllerResponse } from "../auth/authController.ts";
-import { verifyAccessToken } from "../auth/tokenService.ts";
+import { getBearerPayload } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
 import type { CreditNote, DisbursementRecord } from "./creditNoteModel.ts";
 import { CreditNoteService, InvoiceNotFoundError } from "./creditNoteService.ts";
-
-function isAuthenticated(authorizationHeader: string | undefined): boolean {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
-  return token !== undefined && verifyAccessToken(token) !== null;
-}
 
 export function handlePostRefund(
   creditNoteService: CreditNoteService,
   authorizationHeader: string | undefined,
   requestBody: unknown,
 ): ControllerResponse {
-  if (!isAuthenticated(authorizationHeader)) {
+  if (!getBearerPayload(authorizationHeader)) {
     return { status: 401, body: { error: "missing or invalid authorization" } };
   }
 
@@ -56,7 +51,7 @@ export function handlePostCancellationDisbursement(
   authorizationHeader: string | undefined,
   requestBody: unknown,
 ): ControllerResponse {
-  if (!isAuthenticated(authorizationHeader)) {
+  if (!getBearerPayload(authorizationHeader)) {
     return { status: 401, body: { error: "missing or invalid authorization" } };
   }
 
@@ -98,7 +93,7 @@ export function handleGetCreditNote(
   authorizationHeader: string | undefined,
   id: string,
 ): ControllerResponse {
-  if (!isAuthenticated(authorizationHeader)) {
+  if (!getBearerPayload(authorizationHeader)) {
     return { status: 401, body: { error: "missing or invalid authorization" } };
   }
 
@@ -114,7 +109,7 @@ export function handleGetDisbursementRecord(
   authorizationHeader: string | undefined,
   id: string,
 ): ControllerResponse {
-  if (!isAuthenticated(authorizationHeader)) {
+  if (!getBearerPayload(authorizationHeader)) {
     return { status: 401, body: { error: "missing or invalid authorization" } };
   }
 
