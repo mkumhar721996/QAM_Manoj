@@ -44,25 +44,29 @@ export class NotificationService {
     subject: string,
     body: string,
   ): Promise<void> {
-    if (this.deliveryLogRepository.hasSucceeded(type, transactionId)) {
+    if (!this.deliveryLogRepository.tryReserve(type, transactionId)) {
       return;
     }
 
-    const customer = this.userRepository.findById(customerId);
-    if (!customer) {
-      return;
-    }
-
-    for (let attempt = 1; attempt <= this.maxDeliveryAttempts; attempt++) {
-      try {
-        await this.emailSender.send({ to: customer.email, subject, body });
-        this.deliveryLogRepository.recordSent(type, transactionId, customer.email);
+    try {
+      const customer = this.userRepository.findById(customerId);
+      if (!customer) {
         return;
-      } catch {
-        if (attempt === this.maxDeliveryAttempts) {
-          this.deliveryLogRepository.recordPermanentlyFailed(type, transactionId, customer.email);
+      }
+
+      for (let attempt = 1; attempt <= this.maxDeliveryAttempts; attempt++) {
+        try {
+          await this.emailSender.send({ to: customer.email, subject, body });
+          this.deliveryLogRepository.recordSent(type, transactionId, customer.email);
+          return;
+        } catch {
+          if (attempt === this.maxDeliveryAttempts) {
+            this.deliveryLogRepository.recordPermanentlyFailed(type, transactionId, customer.email);
+          }
         }
       }
+    } finally {
+      this.deliveryLogRepository.release(type, transactionId);
     }
   }
 }

@@ -51,3 +51,16 @@ test("AC7: a notification is logged as permanently failed once all retries are e
   assert.equal(emailSender.attemptCount, 3);
   assert.equal(deliveryLogRepository.getAll()[0].status, "permanently_failed");
 });
+
+test("AC8: concurrent triggers for the same transaction ID do not result in duplicate delivery", async () => {
+  const userRepository = new UserRepository();
+  const deliveryLogRepository = new DeliveryLogRepository();
+  const emailSender = new FakeEmailSender();
+  const service = new NotificationService(userRepository, deliveryLogRepository, emailSender);
+  const event = { ...refundEvent, transactionId: "txn-8" };
+
+  await Promise.all([service.notifyRefundIssued(event), service.notifyRefundIssued(event)]);
+
+  assert.equal(emailSender.sentMessages.length, 1);
+  assert.equal(deliveryLogRepository.getAll().length, 1);
+});
