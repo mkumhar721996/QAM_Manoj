@@ -4,9 +4,13 @@ export type Role = "customer" | "provider" | "admin";
 
 export interface User {
   id: string;
-  username: string;
-  passwordHash: string;
   role: Role;
+  username?: string;
+  passwordHash?: string;
+  facebookId?: string;
+  name?: string;
+  email?: string;
+  avatarUrl?: string | null;
 }
 
 export const TEST_PASSWORD = "test-password";

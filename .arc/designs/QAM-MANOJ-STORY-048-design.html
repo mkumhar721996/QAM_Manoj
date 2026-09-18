@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="en" data-theme="default">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QAM-MANOJ-STORY-048 — Facebook registration &amp; login</title>
+
+<!-- Project design system: linked, never inlined (per task instructions for this project). -->
+<style>
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --color-fg: [object Object]; /** Default body text color on color-bg. Passes WCAG AA (>7:1) for normal text. */
+  --color-bg: [object Object]; /** Default page/surface background. */
+  --color-surface: [object Object]; /** Slightly recessed surface, used for chips and inputs. */
+  --color-fg-muted: [object Object]; /** Secondary text, e.g. helper text and captions. */
+  --color-primary: [object Object]; /** Brand primary, used for primary actions and emphasis. */
+  --color-primary-hover: [object Object]; /** Hover/active state of color-primary. */
+  --color-primary-fg: [object Object]; /** Text/icon color on top of color-primary. */
+  --color-border: [object Object]; /** Default hairline border for cards, inputs, and dividers. */
+  --color-danger: [object Object]; /** Destructive actions and error states. */
+  --space-1: [object Object]; /** Smallest spacing increment. */
+  --space-2: [object Object];
+  --space-3: [object Object];
+  --space-4: [object Object];
+  --radius-sm: [object Object]; /** Chips, small controls. */
+  --radius-md: [object Object]; /** Buttons, inputs. */
+  --radius-lg: [object Object]; /** Cards, modals. */
+  --font-size-sm: [object Object];
+  --font-size-md: [object Object];
+  --font-size-lg: [object Object];
+  --border-width-default: [object Object];
+  --font-family-base: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-bold: 600;
+  --line-height-base: 1.5;
+  --shadow-sm: [object Object] [object Object] [object Object] [object Object] [object Object]; /** Resting elevation for cards. */
+  --border-default: var(--color-border) solid var(--border-width-default); /** Composite hairline border used by cards and inputs. */
+  --button-primary-background: var(--color-primary);
+  --button-primary-background-hover: var(--color-primary-hover);
+  --button-primary-foreground: var(--color-primary-fg);
+  --button-primary-radius: var(--radius-md);
+  --button-secondary-background: var(--color-bg);
+  --button-secondary-foreground: var(--color-primary);
+  --button-secondary-border: var(--color-border);
+  --button-secondary-radius: var(--radius-md);
+  --card-default-background: var(--color-bg);
+  --card-default-border: var(--color-border);
+  --card-default-radius: var(--radius-lg);
+  --card-default-padding: var(--space-4);
+  --chip-default-background: var(--color-surface);
+  --chip-default-foreground: var(--color-fg-muted);
+  --chip-default-radius: var(--radius-sm);
+  --input-default-background: var(--color-bg);
+  --input-default-border: var(--color-border);
+  --input-default-radius: var(--radius-md);
+  --input-default-foreground: var(--color-fg);
+}
+
+</style>
+<style>
+/* Utility and component classes built exclusively from design tokens. */
+/* Every value below is a var(--token-name) reference rendered from tokens.json. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-base);
+}
+
+/* Layout utilities */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Spacing utilities */
+
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+
+/* Typography utilities */
+
+.text-sm { font-size: var(--font-size-sm); }
+.text-md { font-size: var(--font-size-md); }
+.text-lg { font-size: var(--font-size-lg); }
+
+.text-muted { color: var(--color-fg-muted); }
+.text-bold { font-weight: var(--font-weight-bold); }
+
+/* Buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-base);
+  border-width: var(--border-width-default);
+  border-style: solid;
+  border-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--button-primary-background);
+  color: var(--button-primary-foreground);
+  border-radius: var(--button-primary-radius);
+}
+
+.btn-primary:hover {
+  background: var(--button-primary-background-hover);
+}
+
+.btn-secondary {
+  background: var(--button-secondary-background);
+  color: var(--button-secondary-foreground);
+  border-color: var(--button-secondary-border);
+  border-radius: var(--button-secondary-radius);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface);
+}
+
+/* Card */
+
+.card {
+  background: var(--card-default-background);
+  border: var(--border-width-default) solid var(--card-default-border);
+  border-radius: var(--card-default-radius);
+  padding: var(--card-default-padding);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-fg);
+}
+
+.card-body {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--color-fg-muted);
+}
+
+/* Chip */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--chip-default-background);
+  color: var(--chip-default-foreground);
+  border-radius: var(--chip-default-radius);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Form controls */
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--input-default-background);
+  color: var(--input-default-foreground);
+  border: var(--border-width-default) solid var(--input-default-border);
+  border-radius: var(--input-default-radius);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-base);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-fg);
+}
+
+</style>
+
+<!--
+  App nav: none. This is a pre-login authentication flow for a small consumer app —
+  there is no existing sidebar/top-nav in this codebase (backend-only repo, see
+  src/auth/*, src/sessions/*). The only "nav" is the minimal top bar shown once the
+  user is signed in (Screen 7: Home), consistent with the app having exactly one
+  entry point (sign up / log in) and one authenticated destination for this story.
+-->
+
+<style>
+  /* Page-specific layout chrome only — all colors/spacing/radii/type come from tokens.css. */
+
+  body {
+    min-height: 100dvh;
+  }
+
+  #screens {
+    min-height: 100dvh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .screen {
+    width: 100%;
+    min-height: calc(100dvh - 46px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+  }
+
+  .auth-shell {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .auth-shell .card {
+    width: 100%;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-lg);
+    color: var(--color-fg);
+  }
+
+  .fb-btn {
+    width: 100%;
+  }
+
+  .fb-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .helper-footnote {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-fg-muted);
+    text-align: center;
+    line-height: var(--line-height-base);
+  }
+
+  .scenario-picker {
+    border: var(--border-width-default) dashed var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .scenario-picker legend {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-fg-muted);
+    padding: 0 var(--space-1);
+  }
+
+  .scenario-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .scenario-option input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .scenario-option span {
+    font-size: var(--font-size-sm);
+    color: var(--color-fg);
+  }
+
+  .demo-link {
+    background: none;
+    border: none;
+    padding: var(--space-1);
+    color: var(--color-fg-muted);
+    font-size: var(--font-size-sm);
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: var(--font-family-base);
+  }
+
+  .demo-link:hover {
+    color: var(--color-fg);
+  }
+
+  /* Simulated external OAuth chrome */
+  .browser-chrome {
+    border: var(--border-width-default) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    background: var(--color-bg);
+  }
+
+  .browser-chrome-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface);
+    border-bottom: var(--border-width-default) solid var(--color-border);
+  }
+
+  .browser-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-border);
+  }
+
+  .browser-url {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--color-fg-muted);
+    background: var(--color-bg);
+    border: var(--border-width-default) solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+    text-align: center;
+  }
+
+  .browser-body {
+    padding: var(--space-4);
+  }
+
+  .consent-app-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .consent-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+  }
+
+  .permission-list {
+    list-style: none;
+    margin: var(--space-3) 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .permission-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-fg);
+  }
+
+  .permission-list svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--color-primary);
+  }
+
+  .consent-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  /* Loading */
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto var(--space-3) auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+      border-top-color: var(--color-border);
+    }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .center-text {
+    text-align: center;
+  }
+
+  /* Status banners: color + icon + label, never color alone */
+  .status-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: var(--border-width-default) solid var(--color-border);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-3);
+  }
+
+  .status-banner.success {
+    border-color: var(--color-primary);
+    background: var(--color-surface);
+    color: var(--color-fg);
+  }
+
+  .status-banner.error {
+    border-color: var(--color-danger);
+    background: var(--color-surface);
+    color: var(--color-fg);
+  }
+
+  .status-banner svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .status-banner.success svg { color: var(--color-primary); }
+  .status-banner.error svg { color: var(--color-danger); }
+
+  .profile-review {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-3);
+  }
+
+  .profile-review .avatar-lg {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+  }
+
+  .field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) 0;
+    border-bottom: var(--border-width-default) solid var(--color-border);
+    font-size: var(--font-size-sm);
+    gap: var(--space-3);
+  }
+
+  .field-row:last-child { border-bottom: none; }
+
+  .field-row .field-label { color: var(--color-fg-muted); }
+  .field-row .field-value { color: var(--color-fg); font-weight: var(--font-weight-bold); text-align: right; }
+
+  /* Home / top bar */
+  .top-bar {
+    position: sticky;
+    top: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-bg);
+    border-bottom: var(--border-width-default) solid var(--color-border);
+  }
+
+  .home-wrap {
+    width: 100%;
+  }
+
+  .home-content {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .account-method-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+  }
+
+  .account-method-row .method-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: var(--space-4);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-fg);
+    color: var(--color-bg);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 10000;
+  }
+
+  .toast.visible {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast { transition: none; }
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Reviewer bar -->
+<div id="review-bar" style="position:fixed;top:0;left:0;right:0;z-index:9999;
+  display:flex;align-items:center;gap:10px;padding:8px 16px;
+  background:var(--color-bg);border-bottom:1px solid var(--color-border);font-size:13px;font-family:var(--font-family-base)">
+  <span style="font-family:monospace;color:var(--color-fg-muted)">QAM-MANOJ-STORY-048</span>
+  <button id="prev-btn" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:13px;padding:4px 8px;">&larr; Prev</button>
+  <span id="screen-label" style="flex:1;text-align:center;font-weight:600;color:var(--color-fg)"></span>
+  <button id="next-btn" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:13px;padding:4px 8px;">Next &rarr;</button>
+</div>
+<div style="height:46px"></div><!-- spacer -->
+
+<!-- Toast (shared across screens) -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div id="screens">
+
+  <!-- State: entry -->
+  <!--
+    Screen: Sign up / Log in
+    Notes:
+      - Satisfies AC4: the ONLY account-creation control on this screen is "Continue
+        with Facebook" — there is no email/password form and no toggle to reveal one.
+      - The dashed "Reviewer demo controls" box is prototype-only scaffolding so a
+        reviewer can pick which backend outcome to preview (new vs. returning
+        Facebook account) before clicking through. It is not part of the real UI.
+      - "Simulate a cancelled/failed Facebook sign-in" link demonstrates the error
+        path called out in the open questions without requiring a real OAuth error.
+  -->
+  <div class="screen" data-name="Sign Up / Log In">
+    <div class="auth-shell">
+      <div class="brand-row">
+        <div class="brand-mark">P</div>
+        <span class="brand-name">PizzaCo</span>
+      </div>
+      <div class="card">
+        <h1 class="card-title">Sign up or log in</h1>
+        <p class="card-body" style="margin-bottom: var(--space-4);">
+          Use your Facebook account — no separate username or password needed.
+        </p>
+
+        <fieldset class="scenario-picker">
+          <legend>Reviewer demo controls</legend>
+          <label class="scenario-option">
+            <input type="radio" name="scenario" value="new" checked />
+            <span>Simulate: first-time Facebook user (AC1 — registration)</span>
+          </label>
+          <label class="scenario-option">
+            <input type="radio" name="scenario" value="returning" />
+            <span>Simulate: previously-registered Facebook user (AC2 &amp; AC3 — login)</span>
+          </label>
+        </fieldset>
+
+        <button class="btn btn-primary fb-btn" id="continue-fb-btn">
+          <svg class="fb-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.16 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.91h-2.34V22c4.78-.78 8.44-4.94 8.44-9.94z"/>
+          </svg>
+          <span>Continue with Facebook</span>
+        </button>
+
+        <p class="helper-footnote">
+          By continuing, you agree to let PizzaCo access your name, email address, and
+          profile photo from Facebook.
+        </p>
+      </div>
+      <p class="center-text" style="margin-top: var(--space-3);">
+        <button class="demo-link" id="simulate-error-link">Simulate a cancelled/failed Facebook sign-in</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- State: fb-consent -->
+  <!--
+    Screen: Facebook OAuth consent (simulated)
+    Notes:
+      - Represents the external facebook.com consent screen the user is redirected
+        to during OAuth — browser-chrome framing signals it's outside our app.
+      - Permission list reflects the open question "which Facebook profile fields
+        are captured" — resolved here as name, email, and profile photo for design
+        purposes; confirm exact scope at grooming.
+      - "Cancel" demonstrates the OAuth-cancellation error path (open question).
+  -->
+  <div class="screen" data-name="Facebook Consent (simulated)">
+    <div class="auth-shell">
+      <div class="browser-chrome">
+        <div class="browser-chrome-bar">
+          <span class="browser-dot"></span>
+          <span class="browser-dot"></span>
+          <span class="browser-dot"></span>
+          <span class="browser-url">facebook.com/dialog/oauth</span>
+        </div>
+        <div class="browser-body">
+          <div class="consent-app-row">
+            <div class="consent-avatar">P</div>
+            <div>
+              <div style="font-weight: var(--font-weight-bold); color: var(--color-fg);">PizzaCo</div>
+              <div class="text-sm text-muted">wants to access your Facebook account</div>
+            </div>
+          </div>
+
+          <p class="text-sm" style="color: var(--color-fg);">This will let PizzaCo receive:</p>
+          <ul class="permission-list">
+            <li>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z"/></svg>
+              <span>Your name and profile photo</span>
+            </li>
+            <li>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z"/></svg>
+              <span>Your email address</span>
+            </li>
+          </ul>
+
+          <div class="consent-actions">
+            <button class="btn btn-primary" id="consent-continue-btn">Continue as Jordan Alvarez</button>
+            <button class="btn btn-secondary" id="consent-cancel-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State: authenticating -->
+  <!--
+    Screen: Authenticating
+    Notes:
+      - Full-screen transitional loading state while the OAuth code is exchanged
+        for a token and the session is created server-side (see
+        src/auth/authController.ts, src/sessions/sessionRepository.ts — this story
+        needs an equivalent Facebook-token exchange path added there).
+      - Duration is simulated (~600ms) via setTimeout; no real network call.
+  -->
+  <div class="screen" data-name="Authenticating">
+    <div class="auth-shell center-text">
+      <div class="spinner" role="status" aria-label="Signing you in"></div>
+      <p class="text-md" style="color: var(--color-fg);">Signing you in with Facebook&hellip;</p>
+    </div>
+  </div>
+
+  <!-- State: new-account-success -->
+  <!--
+    Screen: Account created (new Facebook user)
+    Notes:
+      - Satisfies AC1: a brand-new account is created directly from the Facebook
+        profile — the user never sets a username or password.
+      - Shows exactly the fields captured on first registration, addressing the
+        open question about which Facebook fields are stored.
+  -->
+  <div class="screen" data-name="Account Created (New User)">
+    <div class="auth-shell">
+      <div class="card">
+        <div class="status-banner success">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z"/></svg>
+          <span>Account created — you're signed up with Facebook.</span>
+        </div>
+
+        <div class="profile-review">
+          <div class="avatar-lg" id="new-account-avatar">JA</div>
+          <div>
+            <div style="font-weight: var(--font-weight-bold); color: var(--color-fg);" id="new-account-name">Jordan Alvarez</div>
+            <div class="text-sm text-muted" id="new-account-email">jordan.alvarez@example.com</div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <span class="field-label">Sign-in method</span>
+          <span class="field-value">Facebook</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Password required</span>
+          <span class="field-value">No</span>
+        </div>
+
+        <button class="btn btn-primary fb-btn" id="new-account-continue-btn" style="margin-top: var(--space-4);">
+          Continue to PizzaCo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- State: returning-user-success -->
+  <!--
+    Screen: Logged in (returning Facebook user)
+    Notes:
+      - Satisfies AC2 and AC3: the same Facebook account maps to the existing
+        account, and the user reaches Home without ever supplying a separate
+        username or password.
+      - Deliberately skips the "account created" review screen since no new
+        account is being created — only a session for the existing one.
+  -->
+  <div class="screen" data-name="Logged In (Returning User)">
+    <div class="auth-shell">
+      <div class="card center-text">
+        <div class="status-banner success" style="text-align: left;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z"/></svg>
+          <span>Welcome back, Jordan — logged in with Facebook.</span>
+        </div>
+        <p class="card-body">No username or password needed. Redirecting you to PizzaCo&hellip;</p>
+        <button class="btn btn-primary fb-btn" id="returning-continue-btn" style="margin-top: var(--space-3);">
+          Continue to PizzaCo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- State: error -->
+  <!--
+    Screen: Sign-in cancelled / Facebook error
+    Notes:
+      - Covers the open question "behavior if the user cancels the Facebook
+        consent screen or Facebook returns an error" — copy distinguishes the two
+        causes but both land here with a retry path and no partial account left
+        behind.
+      - Exact copy/telemetry is a placeholder pending grooming sign-off.
+  -->
+  <div class="screen" data-name="Sign-in Cancelled / Error">
+    <div class="auth-shell">
+      <div class="card">
+        <div class="status-banner error">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+          <span id="error-message">You cancelled Facebook sign-in. No account was created.</span>
+        </div>
+        <p class="card-body">You can try again whenever you're ready — nothing has changed with your Facebook account.</p>
+        <button class="btn btn-primary fb-btn" id="error-retry-btn" style="margin-top: var(--space-3);">
+          Try again
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- State: home -->
+  <!--
+    Screen: Home (logged in)
+    Notes:
+      - Shows the destination both flows land on, and the account settings view
+        confirming AC4: "Facebook" is the only sign-in method listed, with no
+        password field or "set a password" option anywhere.
+  -->
+  <div class="screen" data-name="Home (Logged In)" style="align-items: flex-start; padding: 0;">
+    <div class="home-wrap">
+      <div class="top-bar">
+        <div class="brand-row" style="margin-bottom: 0;">
+          <div class="brand-mark">P</div>
+          <span class="brand-name">PizzaCo</span>
+        </div>
+        <div class="row gap-2">
+          <div class="avatar-lg" style="width: 32px; height: 32px; font-size: var(--font-size-sm);" id="home-avatar">JA</div>
+          <button class="btn btn-secondary" id="logout-btn">Log out</button>
+        </div>
+      </div>
+      <div class="home-content">
+        <div class="card">
+          <h2 class="card-title" id="home-greeting">Welcome, Jordan</h2>
+          <p class="card-body">You're signed in with your Facebook account.</p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title" style="font-size: var(--font-size-md);">Sign-in method</h3>
+          <div class="account-method-row">
+            <div class="method-info">
+              <svg class="fb-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="color: var(--color-primary);">
+                <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.16 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.91h-2.34V22c4.78-.78 8.44-4.94 8.44-9.94z"/>
+              </svg>
+              <span class="text-sm" style="font-weight: var(--font-weight-bold);">Facebook — Connected</span>
+            </div>
+            <span class="chip">Only sign-in method</span>
+          </div>
+          <p class="text-sm text-muted" style="margin-top: var(--space-3);">
+            No username or password is set on this account — this satisfies AC4:
+            Facebook is the sole registration and login option in this story's scope.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Inline fixture data — no network calls anywhere in this prototype.
+  const FIXTURES = {
+    facebookProfile: {
+      name: "Jordan Alvarez",
+      email: "jordan.alvarez@example.com",
+      initials: "JA",
+    },
+  };
+
+  const screens = Array.from(document.querySelectorAll('.screen'));
+  let cur = 0;
+
+  function show(i) {
+    cur = Math.max(0, Math.min(screens.length - 1, i));
+    screens.forEach((s, j) => s.style.display = j === cur ? 'flex' : 'none');
+    document.getElementById('screen-label').textContent =
+      `${cur + 1} / ${screens.length}: ${screens[cur].dataset.name}`;
+  }
+
+  function indexByName(name) {
+    return screens.findIndex((s) => s.dataset.name === name);
+  }
+
+  function getScenario() {
+    const checked = document.querySelector('input[name="scenario"]:checked');
+    return checked ? checked.value : 'new';
+  }
+
+  function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), 2200);
+  }
+
+  document.getElementById('prev-btn').onclick = () => show(cur - 1);
+  document.getElementById('next-btn').onclick = () => show(cur + 1);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') show(cur + 1);
+    if (e.key === 'ArrowLeft') show(cur - 1);
+  });
+
+  // Entry -> Facebook consent (simulated OAuth redirect)
+  document.getElementById('continue-fb-btn').addEventListener('click', () => {
+    show(indexByName('Facebook Consent (simulated)'));
+  });
+
+  // Entry -> Error (demo shortcut for the "Facebook returns an error" open question)
+  document.getElementById('simulate-error-link').addEventListener('click', () => {
+    document.getElementById('error-message').textContent =
+      'Facebook couldn’t complete sign-in. Please try again.';
+    show(indexByName('Sign-in Cancelled / Error'));
+  });
+
+  // Consent -> Authenticating -> branch by scenario
+  document.getElementById('consent-continue-btn').addEventListener('click', function () {
+    const btn = this;
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+      show(indexByName('Authenticating'));
+      setTimeout(() => {
+        const scenario = getScenario();
+        if (scenario === 'new') {
+          show(indexByName('Account Created (New User)'));
+        } else {
+          show(indexByName('Logged In (Returning User)'));
+        }
+      }, 600);
+    }, 250);
+  });
+
+  // Consent -> Cancel -> Error
+  document.getElementById('consent-cancel-btn').addEventListener('click', () => {
+    document.getElementById('error-message').textContent =
+      'You cancelled Facebook sign-in. No account was created.';
+    show(indexByName('Sign-in Cancelled / Error'));
+  });
+
+  // New account success -> Home
+  document.getElementById('new-account-continue-btn').addEventListener('click', () => {
+    document.getElementById('home-greeting').textContent = `Welcome, ${FIXTURES.facebookProfile.name.split(' ')[0]}`;
+    show(indexByName('Home (Logged In)'));
+    showToast('Account created with Facebook');
+  });
+
+  // Returning user success -> Home
+  document.getElementById('returning-continue-btn').addEventListener('click', () => {
+    document.getElementById('home-greeting').textContent = `Welcome, ${FIXTURES.facebookProfile.name.split(' ')[0]}`;
+    show(indexByName('Home (Logged In)'));
+    showToast('Logged in with Facebook');
+  });
+
+  // Error -> retry -> back to Entry
+  document.getElementById('error-retry-btn').addEventListener('click', () => {
+    show(indexByName('Sign Up / Log In'));
+  });
+
+  // Home -> Log out -> back to Entry
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    show(indexByName('Sign Up / Log In'));
+    showToast('Logged out');
+  });
+
+  show(0);
+</script>
+
+</body>
+</html>
+
+<!-- arc:css-inlined -->

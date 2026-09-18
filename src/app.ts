@@ -2,7 +2,9 @@ import type { IncomingMessage, RequestListener, ServerResponse } from "node:http
 import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
-import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
+import { handleFacebookAuth, handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
+import { FacebookGraphOAuthClient } from "./auth/facebookOAuthClient.ts";
+import type { FacebookOAuthClient } from "./auth/facebookOAuthClient.ts";
 import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
 import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
@@ -14,6 +16,7 @@ export interface AppDependencies {
   sessionRepository?: SessionRepository;
   pizzaRepository?: PizzaRepository;
   cartRepository?: CartRepository;
+  facebookOAuthClient?: FacebookOAuthClient;
 }
 
 export interface App {
@@ -23,7 +26,8 @@ export interface App {
 export function createApp(deps: AppDependencies = {}): App {
   const userRepository = deps.userRepository ?? new UserRepository();
   const sessionRepository = deps.sessionRepository ?? new SessionRepository();
-  const authService = new AuthService(userRepository, sessionRepository);
+  const facebookOAuthClient = deps.facebookOAuthClient ?? new FacebookGraphOAuthClient();
+  const authService = new AuthService(userRepository, sessionRepository, facebookOAuthClient);
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
@@ -70,6 +74,7 @@ async function handleRequest(
       route !== "POST /auth/login" &&
       route !== "POST /auth/refresh" &&
       route !== "POST /auth/logout" &&
+      route !== "POST /auth/facebook" &&
       route !== "POST /cart/items"
     ) {
       sendJson(res, 404, { error: "not found" });
@@ -80,6 +85,12 @@ async function handleRequest(
 
     if (route === "POST /auth/login") {
       const result = await handleLogin(authService, body);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "POST /auth/facebook") {
+      const result = await handleFacebookAuth(authService, body);
       sendJson(res, result.status, result.body);
       return;
     }
