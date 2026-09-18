@@ -1,11 +1,11 @@
 import type { ControllerResponse } from "../auth/authController.ts";
 import { verifyAccessToken } from "../auth/tokenService.ts";
-import { asRecord } from "../httpUtils.ts";
+import { asRecord, extractBearerToken } from "../httpUtils.ts";
 import type { PizzaRepository } from "../pizzas/pizzaRepository.ts";
 import { CartService, InvalidCustomisationError, PizzaNotFoundError } from "./cartService.ts";
 
 function extractBearerPayload(authorizationHeader: string | undefined) {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
+  const token = extractBearerToken(authorizationHeader);
   return token ? verifyAccessToken(token) : null;
 }
 

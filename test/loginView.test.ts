@@ -33,18 +33,23 @@ test("AC1: a valid login keeps the user authenticated after a simulated reload",
   }
 });
 
-test("AC2: a successful login response contains what a client needs to route to Home", async () => {
+test("AC2: a successful login navigates the user to the Home view", async () => {
   const server = await startTestServer();
   try {
-    const res = await fetch(`${server.baseUrl}/auth/login`, {
+    const loginRes = await fetch(`${server.baseUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD }),
     });
-    assert.equal(res.status, 200);
-    const body = (await res.json()) as Record<string, unknown>;
-    assert.equal(typeof body.access_token, "string");
-    assert.equal(typeof body.refresh_token, "string");
+    assert.equal(loginRes.status, 200);
+    const { access_token: accessToken } = (await loginRes.json()) as { access_token: string };
+
+    const homeRes = await fetch(`${server.baseUrl}/home`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    assert.equal(homeRes.status, 200);
+    const homeBody = (await homeRes.json()) as { view: string };
+    assert.equal(homeBody.view, "home");
   } finally {
     await server.close();
   }
@@ -66,7 +71,7 @@ test("AC3: an unrecognised username or wrong password returns an error message",
   }
 });
 
-test("AC4: a failed login issues no tokens and creates no session", async () => {
+test("AC4: a failed login issues no tokens, creates no session, and cannot reach the Home view", async () => {
   const sessionRepository = new SessionRepository();
   const server = await startTestServer({ sessionRepository });
   try {
@@ -79,6 +84,9 @@ test("AC4: a failed login issues no tokens and creates no session", async () => 
     assert.equal(body.access_token, undefined);
     assert.equal(body.refresh_token, undefined);
     assert.equal(sessionRepository.countByUserId("user-customer-1"), 0);
+
+    const homeRes = await fetch(`${server.baseUrl}/home`);
+    assert.equal(homeRes.status, 401);
   } finally {
     await server.close();
   }
@@ -120,6 +128,40 @@ test("AC6: the validation error identifies exactly which fields are empty", asyn
     const partialBody = (await onlyPasswordEmpty.json()) as { errors: Record<string, string> };
     assert.equal("username" in partialBody.errors, false);
     assert.equal(typeof partialBody.errors.password, "string");
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC7: clicking the Register link from the Login view shows the Register view", async () => {
+  const server = await startTestServer();
+  try {
+    const loginViewRes = await fetch(`${server.baseUrl}/login`);
+    assert.equal(loginViewRes.status, 200);
+    const loginViewBody = (await loginViewRes.json()) as { links: { register: string } };
+    assert.equal(typeof loginViewBody.links.register, "string");
+
+    const registerRes = await fetch(`${server.baseUrl}${loginViewBody.links.register}`);
+    assert.equal(registerRes.status, 200);
+    const registerBody = (await registerRes.json()) as { view: string };
+    assert.equal(registerBody.view, "register");
+  } finally {
+    await server.close();
+  }
+});
+
+test("AC8: clicking 'Forgot password' from the Login view shows the Forgot Password view", async () => {
+  const server = await startTestServer();
+  try {
+    const loginViewRes = await fetch(`${server.baseUrl}/login`);
+    assert.equal(loginViewRes.status, 200);
+    const loginViewBody = (await loginViewRes.json()) as { links: { forgot_password: string } };
+    assert.equal(typeof loginViewBody.links.forgot_password, "string");
+
+    const forgotPasswordRes = await fetch(`${server.baseUrl}${loginViewBody.links.forgot_password}`);
+    assert.equal(forgotPasswordRes.status, 200);
+    const forgotPasswordBody = (await forgotPasswordRes.json()) as { view: string };
+    assert.equal(forgotPasswordBody.view, "forgot-password");
   } finally {
     await server.close();
   }

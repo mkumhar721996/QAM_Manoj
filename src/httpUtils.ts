@@ -47,6 +47,10 @@ export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
+export function extractBearerToken(authorizationHeader: string | undefined): string | undefined {
+  return authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
+}
+
 export function sendJson(res: ServerResponse, status: number, body?: Record<string, unknown>): void {
   if (body === undefined) {
     res.writeHead(status);

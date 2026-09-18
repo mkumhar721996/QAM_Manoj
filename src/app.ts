@@ -2,12 +2,13 @@ import type { IncomingMessage, RequestListener, ServerResponse } from "node:http
 import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
-import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
+import { handleGetHome, handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
 import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
 import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { handleGetForgotPasswordView, handleGetLoginView, handleGetRegisterView } from "./views/viewsController.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
@@ -49,6 +50,30 @@ async function handleRequest(
   try {
     if (route === "GET /auth/session") {
       const result = handleGetSession(req.headers.authorization);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "GET /home") {
+      const result = handleGetHome(req.headers.authorization);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "GET /login") {
+      const result = handleGetLoginView();
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "GET /register") {
+      const result = handleGetRegisterView();
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "GET /forgot-password") {
+      const result = handleGetForgotPasswordView();
       sendJson(res, result.status, result.body);
       return;
     }
