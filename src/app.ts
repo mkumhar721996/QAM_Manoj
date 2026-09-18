@@ -29,6 +29,15 @@ export interface App {
   requestListener: RequestListener;
 }
 
+function loadStaticAssets(): Map<string, { body: string; contentType: string }> {
+  const assets = new Map<string, { body: string; contentType: string }>();
+  for (const [route, { file, contentType }] of Object.entries(STATIC_ROUTES)) {
+    const body = readFileSync(new URL(`./${file}`, import.meta.url), "utf8");
+    assets.set(route, { body, contentType });
+  }
+  return assets;
+}
+
 export function createApp(deps: AppDependencies = {}): App {
   const userRepository = deps.userRepository ?? new UserRepository();
   const sessionRepository = deps.sessionRepository ?? new SessionRepository();
@@ -36,9 +45,10 @@ export function createApp(deps: AppDependencies = {}): App {
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
+  const staticAssets = loadStaticAssets();
 
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
-    void handleRequest(req, res, authService, pizzaRepository, cartService);
+    void handleRequest(req, res, authService, pizzaRepository, cartService, staticAssets);
   };
 
   return { requestListener };
@@ -50,15 +60,16 @@ async function handleRequest(
   authService: AuthService,
   pizzaRepository: PizzaRepository,
   cartService: CartService,
+  staticAssets: Map<string, { body: string; contentType: string }>,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
   const route = `${method} ${url.pathname}`;
 
   try {
-    const staticRoute = STATIC_ROUTES[route];
-    if (staticRoute) {
-      sendRaw(res, 200, readFileSync(new URL(`./${staticRoute.file}`, import.meta.url), "utf8"), staticRoute.contentType);
+    const staticAsset = staticAssets.get(route);
+    if (staticAsset) {
+      sendRaw(res, 200, staticAsset.body, staticAsset.contentType);
       return;
     }
 
