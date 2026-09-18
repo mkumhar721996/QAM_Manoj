@@ -159,7 +159,7 @@ tests:
         const res = await fetch(`${server.baseUrl}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: "customer1", password: "wrong-password" }),
+          body: JSON.stringify({ username: "customer1", password: WRONG_PASSWORD }),
         });
         assert.equal(res.status, 401);
         const body = (await res.json()) as { error: string };
@@ -185,7 +185,7 @@ tests:
         const res = await fetch(`${server.baseUrl}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: "customer1", password: "wrong-password" }),
+          body: JSON.stringify({ username: "customer1", password: WRONG_PASSWORD }),
         });
         const body = (await res.json()) as Record<string, unknown>;
         assert.equal(body.access_token, undefined);
