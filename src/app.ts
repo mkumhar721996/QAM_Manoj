@@ -2,7 +2,7 @@ import type { IncomingMessage, RequestListener, ServerResponse } from "node:http
 import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
-import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
+import { handleGetSession, handleLogin, handleLogout, handleRefresh, handleRegister } from "./auth/authController.ts";
 import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
 import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
@@ -68,6 +68,7 @@ async function handleRequest(
 
     if (
       route !== "POST /auth/login" &&
+      route !== "POST /auth/register" &&
       route !== "POST /auth/refresh" &&
       route !== "POST /auth/logout" &&
       route !== "POST /cart/items"
@@ -80,6 +81,12 @@ async function handleRequest(
 
     if (route === "POST /auth/login") {
       const result = await handleLogin(authService, body);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (route === "POST /auth/register") {
+      const result = await handleRegister(authService, body);
       sendJson(res, result.status, result.body);
       return;
     }

@@ -5,6 +5,7 @@ export type Role = "customer" | "provider" | "admin";
 export interface User {
   id: string;
   username: string;
+  name?: string;
   passwordHash: string;
   role: Role;
 }

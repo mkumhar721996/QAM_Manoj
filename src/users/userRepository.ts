@@ -17,4 +17,9 @@ export class UserRepository {
   findById(userId: string): User | undefined {
     return this.usersById.get(userId);
   }
+
+  create(user: User): void {
+    this.usersByUsername.set(user.username, user);
+    this.usersById.set(user.id, user);
+  }
 }
