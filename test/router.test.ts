@@ -141,3 +141,30 @@ test("renderForCurrentPath renders a not-found state instead of crashing when th
 
   assert.match(container.innerHTML, /data-view="not-found"/);
 });
+
+test("accessibility: focus moves to the new view's heading after a link click, popstate, and initial render", () => {
+  const window = createFakeWindow("/");
+  const container = createFakeContainer();
+
+  const router = new Router({ window, container, views });
+  router.renderForCurrentPath();
+  assert.equal(container.focusCallCount, 1, "expected focus to move to the heading on initial render");
+
+  router.navigate("/login");
+  assert.equal(container.focusCallCount, 2, "expected focus to move to the heading after navigate()");
+
+  window.location.pathname = "/";
+  window.dispatchPopstate();
+  assert.equal(container.focusCallCount, 3, "expected focus to move to the heading after popstate");
+});
+
+test("accessibility: focus moves to the not-found heading when no view matches", () => {
+  const window = createFakeWindow("/unknown-route");
+  const container = createFakeContainer();
+
+  const router = new Router({ window, container, views: { home: renderHome } });
+  router.renderForCurrentPath();
+
+  assert.match(container.innerHTML, /<h1 tabindex="-1">/);
+  assert.equal(container.focusCallCount, 1);
+});

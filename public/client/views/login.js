@@ -1,7 +1,7 @@
 export function renderLogin() {
   return `
     <section data-view="login">
-      <h1>Log in</h1>
+      <h1 tabindex="-1">Log in</h1>
       <nav>
         <a data-link href="/">Home</a>
         <a data-link href="/register">Create account</a>

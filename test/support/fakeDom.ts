@@ -11,6 +11,11 @@ export interface FakeAnchorElement {
   closest(selector: string): FakeAnchorElement | null;
 }
 
+export interface FakeHeadingElement {
+  tagName: "H1";
+  focus(): void;
+}
+
 export interface FakeClickEvent {
   type: "click";
   target: FakeAnchorElement;
@@ -21,8 +26,9 @@ export interface FakeClickEvent {
 export interface FakeContainer {
   innerHTML: string;
   addEventListener(type: string, handler: (event: FakeClickEvent) => void): void;
-  querySelector(selector: string): FakeAnchorElement | null;
+  querySelector(selector: string): FakeAnchorElement | FakeHeadingElement | null;
   dispatchClick(target: FakeAnchorElement): FakeClickEvent;
+  focusCallCount: number;
 }
 
 export interface FakeWindow {
@@ -66,6 +72,7 @@ function matchesSelector(attributes: Record<string, string>, selector: string): 
 export function createFakeContainer(): FakeContainer {
   const listeners = new Map<string, Array<(event: FakeClickEvent) => void>>();
   let html = "";
+  let focusCallCount = 0;
 
   return {
     get innerHTML() {
@@ -74,12 +81,19 @@ export function createFakeContainer(): FakeContainer {
     set innerHTML(value: string) {
       html = value;
     },
+    get focusCallCount() {
+      return focusCallCount;
+    },
     addEventListener(type, handler) {
       const handlers = listeners.get(type) ?? [];
       handlers.push(handler);
       listeners.set(type, handlers);
     },
     querySelector(selector: string) {
+      if (selector === "h1") {
+        if (!/<h1[\s>]/.test(html)) return null;
+        return { tagName: "H1", focus: () => { focusCallCount += 1; } };
+      }
       const anchorTagPattern = /<a\s+([^>]*)>/g;
       let match: RegExpExecArray | null;
       while ((match = anchorTagPattern.exec(html)) !== null) {

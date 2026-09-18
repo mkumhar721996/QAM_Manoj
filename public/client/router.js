@@ -33,9 +33,17 @@ export class Router {
     const viewName = ROUTES[this.window.location.pathname];
     const render = viewName && this.views[viewName];
     if (!render) {
-      this.container.innerHTML = '<section data-view="not-found"><h1>Page not found</h1></section>';
-      return;
+      this.container.innerHTML = '<section data-view="not-found"><h1 tabindex="-1">Page not found</h1></section>';
+    } else {
+      this.container.innerHTML = render();
     }
-    this.container.innerHTML = render();
+    this.focusViewHeading();
+  }
+
+  focusViewHeading() {
+    const heading = this.container.querySelector("h1");
+    if (heading && typeof heading.focus === "function") {
+      heading.focus();
+    }
   }
 }

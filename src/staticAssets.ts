@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ServerResponse } from "node:http";
+import { log, recordRequest } from "./observability.ts";
 
 const PUBLIC_DIR = path.join(import.meta.dirname, "..", "public");
 const INDEX_HTML_PATH = path.join(PUBLIC_DIR, "index.html");
@@ -28,31 +29,41 @@ async function readCached(absolutePath: string): Promise<string> {
 }
 
 export async function serveAppShell(res: ServerResponse): Promise<void> {
+  const startedAt = Date.now();
   let html: string;
   try {
     html = await readCached(INDEX_HTML_PATH);
   } catch (err) {
-    console.error("failed to read app shell index.html:", err);
+    log("error", "failed to read app shell", { file: "index.html", error: String(err) });
+    recordRequest("app_shell", Date.now() - startedAt, true);
     res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("internal server error");
     return;
   }
+  recordRequest("app_shell", Date.now() - startedAt, false);
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
   res.end(html);
 }
 
 export async function serveClientAsset(res: ServerResponse, pathname: string): Promise<boolean> {
+  const startedAt = Date.now();
   const relativePath = CLIENT_ASSETS[pathname];
-  if (!relativePath) return false;
+  if (!relativePath) {
+    log("warn", "requested client asset is not in the allowlist", { pathname });
+    recordRequest("client_asset", Date.now() - startedAt, true);
+    return false;
+  }
   let contents: string;
   try {
     contents = await readCached(path.join(PUBLIC_DIR, relativePath));
   } catch (err) {
-    console.error(`failed to read client asset ${pathname}:`, err);
+    log("error", "failed to read client asset", { pathname, file: relativePath, error: String(err) });
+    recordRequest("client_asset", Date.now() - startedAt, true);
     res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("internal server error");
     return true;
   }
+  recordRequest("client_asset", Date.now() - startedAt, false);
   res.writeHead(200, {
     "Content-Type": "application/javascript; charset=utf-8",
     "Cache-Control": "public, max-age=300",
