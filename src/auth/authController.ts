@@ -8,11 +8,22 @@ export interface ControllerResponse {
   body?: Record<string, unknown>;
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
 export async function handleLogin(authService: AuthService, requestBody: unknown): Promise<ControllerResponse> {
   const { username, password } = asRecord(requestBody);
 
-  if (typeof username !== "string" || typeof password !== "string") {
-    return { status: 400, body: { error: "username and password are required" } };
+  if (!isNonEmptyString(username) || !isNonEmptyString(password)) {
+    const fieldErrors: Record<string, string> = {};
+    if (!isNonEmptyString(username)) {
+      fieldErrors.username = "This field is required";
+    }
+    if (!isNonEmptyString(password)) {
+      fieldErrors.password = "This field is required";
+    }
+    return { status: 400, body: { errors: fieldErrors } };
   }
 
   try {
