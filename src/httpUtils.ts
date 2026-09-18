@@ -47,6 +47,11 @@ export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
+export function sendRaw(res: ServerResponse, status: number, body: string, contentType: string): void {
+  res.writeHead(status, { "Content-Type": contentType, "Content-Length": Buffer.byteLength(body) });
+  res.end(body);
+}
+
 export function sendJson(res: ServerResponse, status: number, body?: Record<string, unknown>): void {
   if (body === undefined) {
     res.writeHead(status);

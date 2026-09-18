@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PizzaBook</title>
+<link rel="stylesheet" href="/design-system/tokens.css" />
+<link rel="stylesheet" href="/design-system/prototype-utils.css" />
+</head>
+<body>
+  <div class="stack p-4" data-testid="home-view" hidden>
+    <nav class="row" data-testid="navbar">
+      <span class="text-bold text-lg" data-testid="logo">PizzaBook</span>
+      <button class="btn btn-secondary" data-testid="logout-button">Log out</button>
+    </nav>
+    <div class="card" data-testid="story-strip">Stories go here</div>
+    <div class="stack" data-testid="post-feed"></div>
+  </div>
+  <script type="module">
+    import { initHome } from "/home.js";
+    initHome({ document, storage: window.localStorage, location: window.location });
+  </script>
+</body>
+</html>
