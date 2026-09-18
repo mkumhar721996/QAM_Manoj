@@ -116,7 +116,7 @@ scope:
         if (typeof name !== "string" || name.trim() === "") errors.name = "name is required";
         if (typeof email !== "string" || email.trim() === "") errors.email = "email is required";
         else if (!EMAIL_REGEX.test(email)) errors.email = "email must be a valid email address";
-        if (typeof password !== "string" || password === "") errors.password = "password is required";
+        if (typeof password !== "string" || password.length === 0) errors.password = "password is required";
 
         if (Object.keys(errors).length > 0) {
           return { status: 400, body: { errors } };
@@ -195,14 +195,14 @@ tests:
         const registerRes = await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", password: "s3cret-pw" }),
+          body: JSON.stringify({ name: "Ada Lovelace", email: "ada@example.com", password: "test-password" }),
         });
         assert.equal(registerRes.status, 201);
 
         const loginRes = await fetch(`${server.baseUrl}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: "ada@example.com", password: "s3cret-pw" }),
+          body: JSON.stringify({ username: "ada@example.com", password: "test-password" }),
         });
         assert.equal(loginRes.status, 200);
       } finally {
@@ -221,7 +221,7 @@ tests:
         const registerRes = await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "Grace Hopper", email: "grace@example.com", password: "s3cret-pw" }),
+          body: JSON.stringify({ name: "Grace Hopper", email: "grace@example.com", password: "test-password" }),
         });
         const { access_token: accessToken } = (await registerRes.json()) as { access_token: string };
 
@@ -243,7 +243,7 @@ tests:
       const userRepository = new UserRepository();
       const server = await startTestServer({ userRepository });
       try {
-        const payload = { name: "Ada Lovelace", email: "dup@example.com", password: "s3cret-pw" };
+        const payload = { name: "Ada Lovelace", email: "dup@example.com", password: "test-password" };
         const first = await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
         });
@@ -271,7 +271,7 @@ tests:
       try {
         const res = await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "", email: "missingname@example.com", password: "s3cret-pw" }),
+          body: JSON.stringify({ name: "", email: "missingname@example.com", password: "test-password" }),
         });
         assert.equal(res.status, 400);
         const body = (await res.json()) as { errors: { name?: string } };
@@ -289,7 +289,7 @@ tests:
       try {
         const res = await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "Ada Lovelace", email: "not-an-email", password: "s3cret-pw" }),
+          body: JSON.stringify({ name: "Ada Lovelace", email: "not-an-email", password: "test-password" }),
         });
         assert.equal(res.status, 400);
         const body = (await res.json()) as { errors: { email?: string } };
@@ -309,11 +309,11 @@ tests:
       try {
         await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "", email: "blocked@example.com", password: "s3cret-pw" }),
+          body: JSON.stringify({ name: "", email: "blocked@example.com", password: "test-password" }),
         });
         await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "Ada", email: "not-an-email", password: "s3cret-pw" }),
+          body: JSON.stringify({ name: "Ada", email: "not-an-email", password: "test-password" }),
         });
         assert.equal(userRepository.findByUsername("blocked@example.com"), undefined);
       } finally {

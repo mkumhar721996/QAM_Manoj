@@ -50,7 +50,7 @@ export async function handleRegister(authService: AuthService, requestBody: unkn
   } else if (!EMAIL_REGEX.test(email)) {
     errors.email = "email must be a valid email address";
   }
-  if (typeof password !== "string" || password === "") {
+  if (typeof password !== "string" || password.length === 0) {
     errors.password = "password is required";
   }
 
