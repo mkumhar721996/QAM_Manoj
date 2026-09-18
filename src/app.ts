@@ -8,6 +8,9 @@ import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { serveAppShell, serveClientAsset } from "./staticAssets.ts";
+
+const SPA_ROUTES = new Set(["/", "/login", "/register", "/forgot-password"]);
 
 export interface AppDependencies {
   userRepository?: UserRepository;
@@ -47,6 +50,16 @@ async function handleRequest(
   const route = `${method} ${url.pathname}`;
 
   try {
+    if (method === "GET" && SPA_ROUTES.has(url.pathname)) {
+      await serveAppShell(res);
+      return;
+    }
+
+    if (method === "GET" && url.pathname.startsWith("/client/")) {
+      const served = await serveClientAsset(res, url.pathname);
+      if (served) return;
+    }
+
     if (route === "GET /auth/session") {
       const result = handleGetSession(req.headers.authorization);
       sendJson(res, result.status, result.body);
