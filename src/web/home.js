@@ -1,4 +1,6 @@
-export const SESSION_STORAGE_KEY = "qam_session";
+// Matches the `access_token` field returned by POST /auth/login (see authController.ts),
+// which is the value a real login flow persists to establish a client session.
+export const SESSION_STORAGE_KEY = "access_token";
 
 export const POSTS = [
   { author: "Priya Sharma", text: "Excited to try the new pizza builder!", timestamp: "2026-09-15T10:00:00Z" },
