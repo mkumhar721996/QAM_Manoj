@@ -1,5 +1,6 @@
 import { UserStore } from "./userStore.ts";
 import { SessionStore } from "./sessionStore.ts";
+import { hashPassword, verifyPassword } from "./passwordHasher.ts";
 
 export class DuplicateUserError extends Error {
   constructor(email: string) {
@@ -22,16 +23,17 @@ export class LocalAuthService {
     this.sessionStore = sessionStore;
   }
 
-  register(email: string, password: string, now: number = Date.now()): void {
+  async register(email: string, password: string, now: number = Date.now()): Promise<void> {
     if (this.userStore.findByEmail(email)) {
       throw new DuplicateUserError(email);
     }
-    this.userStore.save({ email, password, createdAt: now });
+    const passwordHash = await hashPassword(password);
+    this.userStore.save({ email, passwordHash, createdAt: now });
   }
 
-  login(email: string, password: string): void {
+  async login(email: string, password: string): Promise<void> {
     const user = this.userStore.findByEmail(email);
-    if (!user || user.password !== password) {
+    if (!user || !(await verifyPassword(password, user.passwordHash))) {
       throw new InvalidCredentialsError();
     }
     this.sessionStore.setCurrentSession({ email });
@@ -41,12 +43,13 @@ export class LocalAuthService {
     this.sessionStore.clearCurrentSession();
   }
 
-  resetPassword(email: string, newPassword: string): void {
+  async resetPassword(email: string, newPassword: string): Promise<void> {
     const user = this.userStore.findByEmail(email);
     if (!user) {
       throw new InvalidCredentialsError();
     }
-    this.userStore.save({ ...user, password: newPassword });
+    const passwordHash = await hashPassword(newPassword);
+    this.userStore.save({ ...user, passwordHash });
   }
 
   isAuthenticated(): boolean {

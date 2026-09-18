@@ -5,7 +5,7 @@ const STORAGE_KEY = "mockAuth:users";
 
 export interface StoredUser {
   email: string;
-  password: string;
+  passwordHash: string;
   createdAt: number;
 }
 
