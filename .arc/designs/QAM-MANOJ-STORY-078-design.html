@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QAM-MANOJ-STORY-078 — Login View</title>
+<style>
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --color-fg: [object Object]; /** Default body text color on color-bg. Passes WCAG AA (>7:1) for normal text. */
+  --color-bg: [object Object]; /** Default page/surface background. */
+  --color-surface: [object Object]; /** Slightly recessed surface, used for chips and inputs. */
+  --color-fg-muted: [object Object]; /** Secondary text, e.g. helper text and captions. */
+  --color-primary: [object Object]; /** Brand primary, used for primary actions and emphasis. */
+  --color-primary-hover: [object Object]; /** Hover/active state of color-primary. */
+  --color-primary-fg: [object Object]; /** Text/icon color on top of color-primary. */
+  --color-border: [object Object]; /** Default hairline border for cards, inputs, and dividers. */
+  --color-danger: [object Object]; /** Destructive actions and error states. */
+  --space-1: [object Object]; /** Smallest spacing increment. */
+  --space-2: [object Object];
+  --space-3: [object Object];
+  --space-4: [object Object];
+  --radius-sm: [object Object]; /** Chips, small controls. */
+  --radius-md: [object Object]; /** Buttons, inputs. */
+  --radius-lg: [object Object]; /** Cards, modals. */
+  --font-size-sm: [object Object];
+  --font-size-md: [object Object];
+  --font-size-lg: [object Object];
+  --border-width-default: [object Object];
+  --font-family-base: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-bold: 600;
+  --line-height-base: 1.5;
+  --shadow-sm: [object Object] [object Object] [object Object] [object Object] [object Object]; /** Resting elevation for cards. */
+  --border-default: var(--color-border) solid var(--border-width-default); /** Composite hairline border used by cards and inputs. */
+  --button-primary-background: var(--color-primary);
+  --button-primary-background-hover: var(--color-primary-hover);
+  --button-primary-foreground: var(--color-primary-fg);
+  --button-primary-radius: var(--radius-md);
+  --button-secondary-background: var(--color-bg);
+  --button-secondary-foreground: var(--color-primary);
+  --button-secondary-border: var(--color-border);
+  --button-secondary-radius: var(--radius-md);
+  --card-default-background: var(--color-bg);
+  --card-default-border: var(--color-border);
+  --card-default-radius: var(--radius-lg);
+  --card-default-padding: var(--space-4);
+  --chip-default-background: var(--color-surface);
+  --chip-default-foreground: var(--color-fg-muted);
+  --chip-default-radius: var(--radius-sm);
+  --input-default-background: var(--color-bg);
+  --input-default-border: var(--color-border);
+  --input-default-radius: var(--radius-md);
+  --input-default-foreground: var(--color-fg);
+}
+
+</style>
+<style>
+/* Utility and component classes built exclusively from design tokens. */
+/* Every value below is a var(--token-name) reference rendered from tokens.json. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-base);
+}
+
+/* Layout utilities */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Spacing utilities */
+
+.p-1 { padding: var(--space-1); }
+.p-2 { padding: var(--space-2); }
+.p-3 { padding: var(--space-3); }
+.p-4 { padding: var(--space-4); }
+
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+
+/* Typography utilities */
+
+.text-sm { font-size: var(--font-size-sm); }
+.text-md { font-size: var(--font-size-md); }
+.text-lg { font-size: var(--font-size-lg); }
+
+.text-muted { color: var(--color-fg-muted); }
+.text-bold { font-weight: var(--font-weight-bold); }
+
+/* Buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-base);
+  border-width: var(--border-width-default);
+  border-style: solid;
+  border-color: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--button-primary-background);
+  color: var(--button-primary-foreground);
+  border-radius: var(--button-primary-radius);
+}
+
+.btn-primary:hover {
+  background: var(--button-primary-background-hover);
+}
+
+.btn-secondary {
+  background: var(--button-secondary-background);
+  color: var(--button-secondary-foreground);
+  border-color: var(--button-secondary-border);
+  border-radius: var(--button-secondary-radius);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface);
+}
+
+/* Card */
+
+.card {
+  background: var(--card-default-background);
+  border: var(--border-width-default) solid var(--card-default-border);
+  border-radius: var(--card-default-radius);
+  padding: var(--card-default-padding);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-fg);
+}
+
+.card-body {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--color-fg-muted);
+}
+
+/* Chip */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--chip-default-background);
+  color: var(--chip-default-foreground);
+  border-radius: var(--chip-default-radius);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Form controls */
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--input-default-background);
+  color: var(--input-default-foreground);
+  border: var(--border-width-default) solid var(--input-default-border);
+  border-radius: var(--input-default-radius);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-base);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-fg);
+}
+
+</style>
+<style>
+  /* Page scaffolding only — every value below is a var(--token) reference. */
+
+  html, body { height: 100%; }
+
+  /* Restore a visible keyboard focus ring on form controls (shared .form-control:focus
+     swaps outline for border-color only); additive, does not redefine any base token. */
+  .form-control:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .auth-page {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    box-sizing: border-box;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .auth-card .btn {
+    width: 100%;
+    /* space-3 (not the default space-2) so the control clears the 44px touch-target minimum */
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+
+  .auth-card .form-control {
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+
+  .auth-brand {
+    text-align: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .auth-brand .logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--space-2);
+  }
+
+  .field-error {
+    display: none;
+    margin: var(--space-1) 0 0;
+    color: var(--color-danger);
+    font-size: var(--font-size-sm);
+  }
+
+  .field-error::before {
+    content: "⚠ ";
+  }
+
+  .form-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+    background: var(--color-surface);
+    border: var(--border-width-default) solid var(--color-danger);
+    border-radius: var(--radius-md);
+    color: var(--color-danger);
+    font-size: var(--font-size-sm);
+  }
+
+  .auth-links {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-3);
+    font-size: var(--font-size-sm);
+  }
+
+  .auth-links a,
+  .auth-footer a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+  .auth-links a:hover,
+  .auth-footer a:hover {
+    text-decoration: underline;
+  }
+
+  .auth-footer {
+    margin-top: var(--space-4);
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--color-fg-muted);
+  }
+
+  .prototype-hint {
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    border: var(--border-width-default) dashed var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-fg-muted);
+  }
+  .prototype-hint strong { color: var(--color-fg); }
+  .prototype-hint code {
+    background: var(--color-surface);
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+
+  [aria-invalid="true"] {
+    border-color: var(--color-danger) !important;
+  }
+
+  /* Home view app chrome */
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--border-width-default) solid var(--color-border);
+  }
+  .app-topbar .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--font-weight-bold);
+  }
+  .app-topbar .brand .logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-sm);
+  }
+  .app-topbar nav {
+    display: flex;
+    gap: var(--space-4);
+    font-size: var(--font-size-sm);
+    color: var(--color-fg-muted);
+  }
+  .app-topbar nav .active {
+    color: var(--color-fg);
+    font-weight: var(--font-weight-bold);
+  }
+  .home-content {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--space-4);
+  }
+</style>
+</head>
+<body>
+
+<!-- App nav: Login/Register/Forgot-password are unauthenticated full-page forms with no
+     app chrome. The Home view (post-login destination) shows a simple top bar —
+     Slice logo · Menu · Cart (active) · Account — appropriate to this consumer pizza-ordering app. -->
+
+<!-- Reviewer bar -->
+<div id="review-bar" style="position:fixed;top:0;left:0;right:0;z-index:9999;
+  display:flex;align-items:center;gap:10px;padding:8px 16px;
+  background:var(--color-bg);border-bottom:1px solid var(--color-border);font-size:13px;font-family:var(--font-family-base)">
+  <span style="font-family:monospace;color:var(--color-fg-muted)">QAM-MANOJ-STORY-078</span>
+  <button id="prev-btn" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:13px;">← Prev</button>
+  <span id="screen-label" style="flex:1;text-align:center;font-weight:600;color:var(--color-fg)"></span>
+  <button id="next-btn" style="background:none;border:none;color:var(--color-primary);cursor:pointer;font-size:13px;">Next →</button>
+</div>
+<div style="height:46px"></div><!-- spacer -->
+
+<div id="screens">
+
+  <!-- Screen: Login
+       Notes:
+         - Fully interactive: type in the fields and click "Log in" to exercise real logic.
+         - AC5/6: submitting with either field empty blocks submission and shows inline
+           "⚠ Enter your ..." messages under the offending field(s); focus moves to the
+           first invalid field.
+         - AC3/4: submitting a non-matching email/password shows a red banner above the
+           form ("We couldn't find an account..."), the email is preserved, the password
+           is cleared, and no session is written — nothing is persisted or navigated.
+         - AC1/2: submitting a fixture-matched email/password persists a session to
+           localStorage (key `slice_session`) and navigates to the Home screen. Reloading
+           this actual HTML file (F5) re-reads that key on load and lands back on Home —
+           open this file, log in, then really refresh the browser to see AC1 for real.
+         - "Forgot password?" and "Create an account" are live links to their own screens (AC7/AC8).
+         - See the dashed hint box for working fixture credentials to try. -->
+  <div class="screen" data-name="Login">
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="logo">S</div>
+          <h1 style="margin:0;font-size:var(--font-size-lg);">Log in to Slice</h1>
+          <p class="text-muted text-sm" style="margin:var(--space-1) 0 0;">Order your favourite pizza in a few taps.</p>
+        </div>
+
+        <div class="card">
+          <div id="login-form-error" class="form-error-banner" role="alert" hidden>
+            <span aria-hidden="true">⚠</span>
+            <span>We couldn't find an account with that email and password. Check your details and try again.</span>
+          </div>
+
+          <form id="login-form" novalidate>
+            <div class="stack gap-3">
+              <div>
+                <label class="form-label" for="login-email">Email</label>
+                <input class="form-control" type="email" id="login-email" name="email" autocomplete="username" />
+                <p class="field-error" id="login-email-error">Enter your email address.</p>
+              </div>
+              <div>
+                <label class="form-label" for="login-password">Password</label>
+                <input class="form-control" type="password" id="login-password" name="password" autocomplete="current-password" />
+                <p class="field-error" id="login-password-error">Enter your password.</p>
+              </div>
+              <button type="submit" class="btn btn-primary" id="login-submit">Log in</button>
+            </div>
+          </form>
+
+          <div class="auth-links">
+            <a href="#" id="forgot-link">Forgot password?</a>
+            <span></span>
+          </div>
+        </div>
+
+        <p class="auth-footer">New to Slice? <a href="#" id="register-link">Create an account</a></p>
+
+        <div class="prototype-hint">
+          <strong>Prototype hint —</strong> try <code>ava.rossi@example.com</code> / <code>PizzaNight42!</code>
+          for a successful login, or any other combination to see the error state.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen: Home
+       Notes:
+         - Reached automatically after a successful login (AC2).
+         - The welcome card reflects whichever fixture account just signed in.
+         - "Log out" clears the persisted session and returns to Login.
+         - Session persistence for AC1 is demonstrated by actually reloading the browser
+           (F5) while this screen is showing — the init script below re-reads
+           localStorage on load and restores this screen instead of Login. -->
+  <div class="screen" data-name="Home">
+    <div class="app-topbar">
+      <div class="brand"><span class="logo">S</span> Slice</div>
+      <nav>
+        <span>Menu</span>
+        <span class="active">Home</span>
+        <span>Cart</span>
+        <span>Account</span>
+      </nav>
+    </div>
+    <div class="home-content stack gap-4">
+      <div class="card">
+        <h2 class="card-title" id="home-welcome">Welcome back!</h2>
+        <p class="card-body" id="home-user-email">&nbsp;</p>
+      </div>
+      <div class="card">
+        <p class="card-body">
+          You're signed in and your session will persist across page reloads until you log out.
+        </p>
+        <div class="row" style="margin-top:var(--space-3);">
+          <button class="btn btn-secondary" id="logout-btn">Log out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen: Register (stub)
+       Notes:
+         - Reached by clicking "Create an account" on the Login screen (AC7).
+         - Full registration flow is a separate work item; this is a placeholder
+           destination so the Login screen's navigation can be reviewed end-to-end.
+         - "Back to login" returns to the Login screen. -->
+  <div class="screen" data-name="Register">
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="logo">S</div>
+          <h1 style="margin:0;font-size:var(--font-size-lg);">Create your account</h1>
+          <p class="text-muted text-sm" style="margin:var(--space-1) 0 0;">Join Slice to start ordering.</p>
+        </div>
+        <div class="card">
+          <p class="card-body">
+            The registration form is designed and built as its own work item. This screen
+            confirms that the Login view correctly navigates here when "Create an account" is clicked.
+          </p>
+        </div>
+        <p class="auth-footer"><a href="#" id="register-back-link">← Back to login</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen: Forgot password (stub)
+       Notes:
+         - Reached by clicking "Forgot password?" on the Login screen (AC8).
+         - Full password-reset flow is a separate work item; this is a placeholder
+           destination so the Login screen's navigation can be reviewed end-to-end.
+         - "Back to login" returns to the Login screen. -->
+  <div class="screen" data-name="Forgot password">
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="logo">S</div>
+          <h1 style="margin:0;font-size:var(--font-size-lg);">Reset your password</h1>
+          <p class="text-muted text-sm" style="margin:var(--space-1) 0 0;">We'll email you a link to choose a new one.</p>
+        </div>
+        <div class="card">
+          <p class="card-body">
+            The password-reset flow is designed and built as its own work item. This screen
+            confirms that the Login view correctly navigates here when "Forgot password?" is clicked.
+          </p>
+        </div>
+        <p class="auth-footer"><a href="#" id="forgot-back-link">← Back to login</a></p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Fixture data — inline, no network calls. Simulated latency via setTimeout only.
+  const REGISTERED_USERS = [
+    { email: "ava.rossi@example.com", password: "PizzaNight42!", name: "Ava Rossi" },
+    { email: "marcus.chen@example.com", password: "ExtraCheese99", name: "Marcus Chen" },
+  ];
+  const SESSION_KEY = "slice_session";
+
+  const screens = Array.from(document.querySelectorAll(".screen"));
+  const indexOf = (name) => screens.findIndex((s) => s.dataset.name === name);
+  const LOGIN = indexOf("Login");
+  const HOME = indexOf("Home");
+  const REGISTER = indexOf("Register");
+  const FORGOT = indexOf("Forgot password");
+
+  let cur = 0;
+  function show(i) {
+    cur = Math.max(0, Math.min(screens.length - 1, i));
+    screens.forEach((s, j) => (s.style.display = j === cur ? "block" : "none"));
+    document.getElementById("screen-label").textContent =
+      `${cur + 1} / ${screens.length}: ${screens[cur].dataset.name}`;
+  }
+  document.getElementById("prev-btn").onclick = () => show(cur - 1);
+  document.getElementById("next-btn").onclick = () => show(cur + 1);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") show(cur + 1);
+    if (e.key === "ArrowLeft") show(cur - 1);
+  });
+
+  // Login form wiring
+  const form = document.getElementById("login-form");
+  const emailInput = document.getElementById("login-email");
+  const passwordInput = document.getElementById("login-password");
+  const emailError = document.getElementById("login-email-error");
+  const passwordError = document.getElementById("login-password-error");
+  const formErrorBanner = document.getElementById("login-form-error");
+  const submitBtn = document.getElementById("login-submit");
+
+  function setFieldError(input, errorEl, show) {
+    errorEl.style.display = show ? "block" : "none";
+    if (show) input.setAttribute("aria-invalid", "true");
+    else input.removeAttribute("aria-invalid");
+  }
+
+  function populateHome(user) {
+    document.getElementById("home-welcome").textContent = `Welcome back, ${user.name.split(" ")[0]}!`;
+    document.getElementById("home-user-email").textContent = `Signed in as ${user.email}`;
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    formErrorBanner.hidden = true;
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    const emailMissing = email.length === 0;
+    const passwordMissing = password.length === 0;
+    setFieldError(emailInput, emailError, emailMissing);
+    setFieldError(passwordInput, passwordError, passwordMissing);
+
+    if (emailMissing || passwordMissing) {
+      // AC5: submission is blocked — no network simulation is even started.
+      (emailMissing ? emailInput : passwordInput).focus();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Logging in…";
+
+    setTimeout(function () {
+      const match = REGISTERED_USERS.find(
+        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+      );
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Log in";
+
+      if (match) {
+        localStorage.setItem(
+          SESSION_KEY,
+          JSON.stringify({ email: match.email, name: match.name, loggedInAt: Date.now() })
+        );
+        populateHome(match);
+        show(HOME);
+      } else {
+        formErrorBanner.hidden = false;
+        passwordInput.value = "";
+        passwordInput.focus();
+      }
+    }, 350);
+  });
+
+  document.getElementById("forgot-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    show(FORGOT);
+  });
+  document.getElementById("register-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    show(REGISTER);
+  });
+  document.getElementById("register-back-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    show(LOGIN);
+  });
+  document.getElementById("forgot-back-link").addEventListener("click", (e) => {
+    e.preventDefault();
+    show(LOGIN);
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    localStorage.removeItem(SESSION_KEY);
+    form.reset();
+    setFieldError(emailInput, emailError, false);
+    setFieldError(passwordInput, passwordError, false);
+    formErrorBanner.hidden = true;
+    show(LOGIN);
+  });
+
+  // Initial load: a persisted session (AC1) restores the Home screen even on a real
+  // browser reload of this file, since it's read from localStorage, not app state.
+  (function init() {
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (stored) {
+      try {
+        populateHome(JSON.parse(stored));
+        show(HOME);
+        return;
+      } catch (e) {
+        localStorage.removeItem(SESSION_KEY);
+      }
+    }
+    show(LOGIN);
+  })();
+</script>
+
+</body>
+</html>
+
+<!-- arc:css-inlined -->
