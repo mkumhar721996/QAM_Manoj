@@ -353,7 +353,7 @@ tests:
         const res = await fetch(`${server.baseUrl}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: "newuser", password: "secret" }),
+          body: JSON.stringify({ username: "newuser", password: "test-password" }),
         });
         assert.equal(res.status, 404);
       } finally {
