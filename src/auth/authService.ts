@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { UserRepository } from "../users/userRepository.ts";
 import { SessionRepository } from "../sessions/sessionRepository.ts";
 import { DUMMY_PASSWORD_HASH, verifyPassword } from "./passwordHasher.ts";
@@ -7,6 +8,8 @@ import {
   generateRefreshToken,
   issueAccessToken,
 } from "./tokenService.ts";
+import { FacebookAuthError } from "./facebookOAuthClient.ts";
+import type { FacebookOAuthClient, FacebookProfile } from "./facebookOAuthClient.ts";
 
 export const INVALID_CREDENTIALS_MESSAGE = "Invalid username or password";
 export const INVALID_REFRESH_TOKEN_MESSAGE = "Invalid or expired refresh token";
@@ -34,20 +37,32 @@ export class InvalidRefreshTokenError extends Error {
   }
 }
 
+export interface FacebookLoginResult {
+  result: LoginResult;
+  isNewAccount: boolean;
+  profile: { name: string; email: string };
+}
+
 export class AuthService {
   private userRepository: UserRepository;
   private sessionRepository: SessionRepository;
+  private facebookOAuthClient: FacebookOAuthClient;
 
-  constructor(userRepository: UserRepository, sessionRepository: SessionRepository) {
+  constructor(
+    userRepository: UserRepository,
+    sessionRepository: SessionRepository,
+    facebookOAuthClient: FacebookOAuthClient,
+  ) {
     this.userRepository = userRepository;
     this.sessionRepository = sessionRepository;
+    this.facebookOAuthClient = facebookOAuthClient;
   }
 
   async login(username: string, password: string, now: number = Date.now()): Promise<LoginResult> {
     const user = this.userRepository.findByUsername(username);
     // Always run scrypt, even for unknown usernames, so response timing doesn't
     // reveal whether the account exists.
-    const passwordMatches = await verifyPassword(password, user ? user.passwordHash : DUMMY_PASSWORD_HASH);
+    const passwordMatches = await verifyPassword(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
 
     if (!user || !passwordMatches) {
       throw new InvalidCredentialsError();
@@ -91,5 +106,39 @@ export class AuthService {
       console.warn("logout: refresh token not found or already revoked");
     }
     return revoked;
+  }
+
+  async loginWithFacebook(code: string, now: number = Date.now()): Promise<FacebookLoginResult> {
+    let profile: FacebookProfile;
+    try {
+      profile = await this.facebookOAuthClient.exchangeCodeForProfile(code);
+    } catch {
+      throw new FacebookAuthError();
+    }
+
+    let user = this.userRepository.findByFacebookId(profile.facebookId);
+    let isNewAccount = false;
+    if (!user) {
+      user = {
+        id: crypto.randomUUID(),
+        role: "customer",
+        facebookId: profile.facebookId,
+        name: profile.name,
+        email: profile.email,
+        avatarUrl: profile.avatarUrl,
+      };
+      this.userRepository.create(user);
+      isNewAccount = true;
+    }
+
+    const refreshToken = generateRefreshToken();
+    this.sessionRepository.create(user.id, refreshToken, REFRESH_TOKEN_TTL_MS, now);
+    const accessToken = issueAccessToken({ userId: user.id, role: user.role }, now);
+
+    return {
+      result: { accessToken, accessTokenExpiresInSeconds: ACCESS_TOKEN_TTL_SECONDS, refreshToken },
+      isNewAccount,
+      profile: { name: user.name!, email: user.email! },
+    };
   }
 }

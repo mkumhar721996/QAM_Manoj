@@ -1,6 +1,7 @@
 import type { AuthService } from "./authService.ts";
 import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
 import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
+import { FacebookAuthError } from "./facebookOAuthClient.ts";
 import { asRecord } from "../httpUtils.ts";
 
 export interface ControllerResponse {
@@ -73,6 +74,36 @@ export function handleLogout(authService: AuthService, requestBody: unknown): Co
   const revoked = authService.logout(refreshToken);
   console.log(`logout ${revoked ? "succeeded" : "no-op: token already invalid"}`);
   return { status: 204 };
+}
+
+export async function handleFacebookAuth(authService: AuthService, requestBody: unknown): Promise<ControllerResponse> {
+  const { code } = asRecord(requestBody);
+
+  if (typeof code !== "string" || code.length === 0) {
+    return { status: 400, body: { error: "code is required" } };
+  }
+
+  try {
+    const { result, isNewAccount, profile } = await authService.loginWithFacebook(code);
+    console.log(`facebook auth succeeded, isNewAccount=${isNewAccount}`);
+    return {
+      status: 200,
+      body: {
+        access_token: result.accessToken,
+        expires_in: result.accessTokenExpiresInSeconds,
+        refresh_token: result.refreshToken,
+        token_type: "Bearer",
+        is_new_account: isNewAccount,
+        user: { name: profile.name, email: profile.email },
+      },
+    };
+  } catch (err) {
+    if (err instanceof FacebookAuthError) {
+      console.warn(`facebook auth failed: ${err.message}`);
+      return { status: 401, body: { error: "Facebook sign-in failed. Please try again." } };
+    }
+    throw err;
+  }
 }
 
 export function handleGetSession(authorizationHeader: string | undefined, now: number = Date.now()): ControllerResponse {
