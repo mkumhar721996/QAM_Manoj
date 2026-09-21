@@ -8,12 +8,23 @@ import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
 import { handleAddToCart, handleGetCart, handleGetPizza } from "./cart/cartController.ts";
+import { ProjectRepository } from "./projects/projectRepository.ts";
+import { WorkItemRepository } from "./workitems/workItemRepository.ts";
+import { WorkItemService } from "./workitems/workItemService.ts";
+import {
+  handleCreateWorkItem,
+  handleDeleteWorkItem,
+  handleGetWorkItem,
+  handleUpdateWorkItem,
+} from "./workitems/workItemController.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
   sessionRepository?: SessionRepository;
   pizzaRepository?: PizzaRepository;
   cartRepository?: CartRepository;
+  projectRepository?: ProjectRepository;
+  workItemRepository?: WorkItemRepository;
 }
 
 export interface App {
@@ -27,9 +38,12 @@ export function createApp(deps: AppDependencies = {}): App {
   const pizzaRepository = deps.pizzaRepository ?? new PizzaRepository();
   const cartRepository = deps.cartRepository ?? new CartRepository();
   const cartService = new CartService(pizzaRepository, cartRepository);
+  const projectRepository = deps.projectRepository ?? new ProjectRepository();
+  const workItemRepository = deps.workItemRepository ?? new WorkItemRepository();
+  const workItemService = new WorkItemService(projectRepository, workItemRepository);
 
   const requestListener: RequestListener = (req: IncomingMessage, res: ServerResponse) => {
-    void handleRequest(req, res, authService, pizzaRepository, cartService);
+    void handleRequest(req, res, authService, pizzaRepository, cartService, workItemService);
   };
 
   return { requestListener };
@@ -41,6 +55,7 @@ async function handleRequest(
   authService: AuthService,
   pizzaRepository: PizzaRepository,
   cartService: CartService,
+  workItemService: WorkItemService,
 ): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", "http://localhost");
@@ -66,17 +81,47 @@ async function handleRequest(
       return;
     }
 
+    const workItemMatch = url.pathname.match(/^\/work-items\/([^/]+)$/);
+    if (method === "GET" && workItemMatch) {
+      const result = handleGetWorkItem(workItemService, req.headers.authorization, workItemMatch[1]);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+    if (method === "DELETE" && workItemMatch) {
+      const result = handleDeleteWorkItem(workItemService, req.headers.authorization, workItemMatch[1]);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    const createWorkItemMatch = url.pathname.match(/^\/projects\/([^/]+)\/work-items$/);
+    const isCreateWorkItem = method === "POST" && createWorkItemMatch !== null;
+    const isUpdateWorkItem = method === "PATCH" && workItemMatch !== null;
+
     if (
       route !== "POST /auth/login" &&
       route !== "POST /auth/refresh" &&
       route !== "POST /auth/logout" &&
-      route !== "POST /cart/items"
+      route !== "POST /cart/items" &&
+      !isCreateWorkItem &&
+      !isUpdateWorkItem
     ) {
       sendJson(res, 404, { error: "not found" });
       return;
     }
 
     const body = await readJsonBody(req);
+
+    if (isCreateWorkItem) {
+      const result = handleCreateWorkItem(workItemService, req.headers.authorization, createWorkItemMatch![1], body);
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
+    if (isUpdateWorkItem) {
+      const result = handleUpdateWorkItem(workItemService, req.headers.authorization, workItemMatch![1], body);
+      sendJson(res, result.status, result.body);
+      return;
+    }
 
     if (route === "POST /auth/login") {
       const result = await handleLogin(authService, body);
