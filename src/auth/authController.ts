@@ -2,6 +2,7 @@ import type { AuthService } from "./authService.ts";
 import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
 import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
+import { ERROR_CODES, errorEnvelope } from "../errors/errorEnvelope.ts";
 
 export interface ControllerResponse {
   status: number;
@@ -12,7 +13,7 @@ export async function handleLogin(authService: AuthService, requestBody: unknown
   const { username, password } = asRecord(requestBody);
 
   if (typeof username !== "string" || typeof password !== "string") {
-    return { status: 400, body: { error: "username and password are required" } };
+    return { status: 400, body: errorEnvelope(ERROR_CODES.VALIDATION_ERROR, "username and password are required") };
   }
 
   try {
@@ -30,7 +31,7 @@ export async function handleLogin(authService: AuthService, requestBody: unknown
   } catch (err) {
     if (err instanceof InvalidCredentialsError) {
       console.warn(`login failed for username=${username}: ${err.message}`);
-      return { status: 401, body: { error: err.message } };
+      return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, err.message) };
     }
     throw err;
   }
@@ -40,7 +41,7 @@ export function handleRefresh(authService: AuthService, requestBody: unknown): C
   const { refresh_token: refreshToken } = asRecord(requestBody);
 
   if (typeof refreshToken !== "string") {
-    return { status: 400, body: { error: "refresh_token is required" } };
+    return { status: 400, body: errorEnvelope(ERROR_CODES.VALIDATION_ERROR, "refresh_token is required") };
   }
 
   try {
@@ -57,7 +58,7 @@ export function handleRefresh(authService: AuthService, requestBody: unknown): C
   } catch (err) {
     if (err instanceof InvalidRefreshTokenError) {
       console.warn(`refresh failed: ${err.message}`);
-      return { status: 401, body: { error: err.message } };
+      return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, err.message) };
     }
     throw err;
   }
@@ -67,7 +68,7 @@ export function handleLogout(authService: AuthService, requestBody: unknown): Co
   const { refresh_token: refreshToken } = asRecord(requestBody);
 
   if (typeof refreshToken !== "string") {
-    return { status: 400, body: { error: "refresh_token is required" } };
+    return { status: 400, body: errorEnvelope(ERROR_CODES.VALIDATION_ERROR, "refresh_token is required") };
   }
 
   const revoked = authService.logout(refreshToken);
@@ -80,7 +81,10 @@ export function handleGetSession(authorizationHeader: string | undefined, now: n
 
   if (!token) {
     console.warn("session lookup failed: missing or malformed authorization header");
-    return { status: 401, body: { error: "missing or malformed authorization header" } };
+    return {
+      status: 401,
+      body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or malformed authorization header"),
+    };
   }
 
   const payload = verifyAccessToken(token, now);
@@ -93,7 +97,7 @@ export function handleGetSession(authorizationHeader: string | undefined, now: n
         ? `session lookup failed: expired access token for userId=${decoded.userId}`
         : "session lookup failed: invalid access token",
     );
-    return { status: 401, body: { error: "invalid or expired access token" } };
+    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "invalid or expired access token") };
   }
 
   console.log(`session lookup succeeded for userId=${payload.userId}`);

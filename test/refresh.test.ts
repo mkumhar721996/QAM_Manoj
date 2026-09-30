@@ -59,8 +59,9 @@ test("AC4: an expired refresh token is rejected so the client can redirect to lo
       body: JSON.stringify({ refresh_token: expiredRefreshToken }),
     });
     assert.equal(res.status, 401);
-    const body = (await res.json()) as { error: string };
-    assert.equal(body.error, "Invalid or expired refresh token");
+    const body = (await res.json()) as { error_code: string; message: string };
+    assert.equal(body.error_code, "UNAUTHORIZED");
+    assert.equal(body.message, "Invalid or expired refresh token");
   } finally {
     await server.close();
   }

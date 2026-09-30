@@ -3,7 +3,8 @@ import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
 import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
-import { PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
+import { InvalidJsonBodyError, PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
+import { ERROR_CODES, errorEnvelope } from "./errors/errorEnvelope.ts";
 import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
 import { CartRepository } from "./cart/cartRepository.ts";
 import { CartService } from "./cart/cartService.ts";
@@ -105,7 +106,7 @@ async function handleRequest(
       !isCreateWorkItem &&
       !isUpdateWorkItem
     ) {
-      sendJson(res, 404, { error: "not found" });
+      sendJson(res, 404, errorEnvelope(ERROR_CODES.NOT_FOUND, "not found"));
       return;
     }
 
@@ -145,10 +146,14 @@ async function handleRequest(
     sendJson(res, result.status, result.body);
   } catch (err) {
     if (err instanceof PayloadTooLargeError) {
-      sendJson(res, 413, { error: err.message });
+      sendJson(res, 413, errorEnvelope(ERROR_CODES.PAYLOAD_TOO_LARGE, err.message));
+      return;
+    }
+    if (err instanceof InvalidJsonBodyError) {
+      sendJson(res, 400, errorEnvelope(ERROR_CODES.VALIDATION_ERROR, err.message));
       return;
     }
     console.error(`unhandled error for ${route}:`, err);
-    sendJson(res, 400, { error: "invalid request" });
+    sendJson(res, 500, errorEnvelope(ERROR_CODES.INTERNAL_ERROR, "An unexpected error occurred"));
   }
 }

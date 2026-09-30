@@ -8,6 +8,12 @@ export class PayloadTooLargeError extends Error {
   }
 }
 
+export class InvalidJsonBodyError extends Error {
+  constructor() {
+    super("Request body must be valid JSON");
+  }
+}
+
 export function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -36,7 +42,7 @@ export function readJsonBody(req: IncomingMessage): Promise<unknown> {
       try {
         resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
       } catch {
-        reject(new Error("Invalid JSON body"));
+        reject(new InvalidJsonBodyError());
       }
     });
     req.on("error", reject);
