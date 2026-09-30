@@ -18,6 +18,7 @@ import {
   handleGetWorkItem,
   handleUpdateWorkItem,
 } from "./workitems/workItemController.ts";
+import { stripV1Prefix } from "./routing.ts";
 
 export interface AppDependencies {
   userRepository?: UserRepository;
@@ -82,7 +83,9 @@ async function handleRequest(
       return;
     }
 
-    const workItemMatch = url.pathname.match(/^\/work-items\/([^/]+)$/);
+    const v1Path = stripV1Prefix(url.pathname);
+
+    const workItemMatch = v1Path !== null ? v1Path.match(/^\/work-items\/([^/]+)$/) : null;
     if (method === "GET" && workItemMatch) {
       const result = handleGetWorkItem(workItemService, req.headers.authorization, workItemMatch[1]);
       sendJson(res, result.status, result.body);
@@ -94,7 +97,7 @@ async function handleRequest(
       return;
     }
 
-    const createWorkItemMatch = url.pathname.match(/^\/projects\/([^/]+)\/work-items$/);
+    const createWorkItemMatch = v1Path !== null ? v1Path.match(/^\/projects\/([^/]+)\/work-items$/) : null;
     const isCreateWorkItem = method === "POST" && createWorkItemMatch !== null;
     const isUpdateWorkItem = method === "PATCH" && workItemMatch !== null;
 

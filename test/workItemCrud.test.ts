@@ -20,7 +20,7 @@ function createWorkItem(
   projectId: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  return fetch(`${baseUrl}/projects/${projectId}/work-items`, {
+  return fetch(`${baseUrl}/v1/projects/${projectId}/work-items`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(body),
@@ -28,7 +28,7 @@ function createWorkItem(
 }
 
 function getWorkItem(baseUrl: string, accessToken: string, workItemId: string): Promise<Response> {
-  return fetch(`${baseUrl}/work-items/${workItemId}`, {
+  return fetch(`${baseUrl}/v1/work-items/${workItemId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
@@ -39,7 +39,7 @@ function updateWorkItem(
   workItemId: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  return fetch(`${baseUrl}/work-items/${workItemId}`, {
+  return fetch(`${baseUrl}/v1/work-items/${workItemId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(body),
@@ -47,7 +47,7 @@ function updateWorkItem(
 }
 
 function deleteWorkItem(baseUrl: string, accessToken: string, workItemId: string): Promise<Response> {
-  return fetch(`${baseUrl}/work-items/${workItemId}`, {
+  return fetch(`${baseUrl}/v1/work-items/${workItemId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
