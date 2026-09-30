@@ -7,14 +7,15 @@ export interface User {
   username: string;
   passwordHash: string;
   role: Role;
+  tenantId: string;
 }
 
 export const TEST_PASSWORD = "test-password";
 
 const testUserSeeds: Array<Omit<User, "passwordHash">> = [
-  { id: "user-customer-1", username: "customer1", role: "customer" },
-  { id: "user-provider-1", username: "provider1", role: "provider" },
-  { id: "user-admin-1", username: "admin1", role: "admin" },
+  { id: "user-customer-1", username: "customer1", role: "customer", tenantId: "tenant-1" },
+  { id: "user-provider-1", username: "provider1", role: "provider", tenantId: "tenant-2" },
+  { id: "user-admin-1", username: "admin1", role: "admin", tenantId: "tenant-1" },
 ];
 
 export const testUsers: User[] = await Promise.all(

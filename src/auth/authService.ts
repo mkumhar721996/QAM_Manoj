@@ -56,7 +56,7 @@ export class AuthService {
     const refreshToken = generateRefreshToken();
     this.sessionRepository.create(user.id, refreshToken, REFRESH_TOKEN_TTL_MS, now);
 
-    const accessToken = issueAccessToken({ userId: user.id, role: user.role }, now);
+    const accessToken = issueAccessToken({ userId: user.id, role: user.role, tenantId: user.tenantId }, now);
 
     return {
       accessToken,
@@ -77,7 +77,7 @@ export class AuthService {
       throw new InvalidRefreshTokenError();
     }
 
-    const accessToken = issueAccessToken({ userId: user.id, role: user.role }, now);
+    const accessToken = issueAccessToken({ userId: user.id, role: user.role, tenantId: user.tenantId }, now);
 
     return {
       accessToken,

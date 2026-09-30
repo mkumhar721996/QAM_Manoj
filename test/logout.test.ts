@@ -5,7 +5,7 @@ import { TEST_PASSWORD } from "../src/users/fixtures/testUsers.ts";
 import { SessionRepository } from "../src/sessions/sessionRepository.ts";
 
 async function login(baseUrl: string): Promise<{ access_token: string; refresh_token: string }> {
-  const res = await fetch(`${baseUrl}/auth/login`, {
+  const res = await fetch(`${baseUrl}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD }),
@@ -14,7 +14,7 @@ async function login(baseUrl: string): Promise<{ access_token: string; refresh_t
 }
 
 async function refresh(baseUrl: string, refreshToken: string): Promise<Response> {
-  return fetch(`${baseUrl}/auth/refresh`, {
+  return fetch(`${baseUrl}/v1/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -22,7 +22,7 @@ async function refresh(baseUrl: string, refreshToken: string): Promise<Response>
 }
 
 async function logout(baseUrl: string, refreshToken: string): Promise<Response> {
-  return fetch(`${baseUrl}/auth/logout`, {
+  return fetch(`${baseUrl}/v1/auth/logout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),

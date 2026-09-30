@@ -1,5 +1,5 @@
 import type { ControllerResponse } from "../auth/authController.ts";
-import { verifyAccessToken } from "../auth/tokenService.ts";
+import type { AuthContext } from "../auth/requestAuth.ts";
 import { asRecord } from "../httpUtils.ts";
 import { ERROR_CODES, errorEnvelope } from "../errors/errorEnvelope.ts";
 import type { WorkItem } from "./workItemModel.ts";
@@ -11,11 +11,6 @@ import {
   WorkItemNotFoundError,
   WorkItemService,
 } from "./workItemService.ts";
-
-function extractBearerPayload(authorizationHeader: string | undefined) {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
-  return token ? verifyAccessToken(token) : null;
-}
 
 function serializeWorkItem(item: WorkItem): Record<string, unknown> {
   return {
@@ -33,15 +28,10 @@ function serializeWorkItem(item: WorkItem): Record<string, unknown> {
 
 export function handleCreateWorkItem(
   workItemService: WorkItemService,
-  authorizationHeader: string | undefined,
+  authContext: AuthContext,
   projectId: string,
   requestBody: unknown,
 ): ControllerResponse {
-  const payload = extractBearerPayload(authorizationHeader);
-  if (!payload) {
-    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
-  }
-
   const { kind, title, description, parent_id: parentId, depends_on_ids: dependsOnIds } = asRecord(requestBody);
   if (
     typeof kind !== "string" ||
@@ -57,7 +47,7 @@ export function handleCreateWorkItem(
   }
 
   try {
-    const item = workItemService.createWorkItem(projectId, payload.userId, {
+    const item = workItemService.createWorkItem(projectId, authContext.userId, authContext.tenantId, {
       kind,
       title,
       description: description as string | null | undefined,
@@ -81,15 +71,11 @@ export function handleCreateWorkItem(
 
 export function handleGetWorkItem(
   workItemService: WorkItemService,
-  authorizationHeader: string | undefined,
+  authContext: AuthContext,
   workItemId: string,
 ): ControllerResponse {
-  const payload = extractBearerPayload(authorizationHeader);
-  if (!payload) {
-    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
-  }
   try {
-    const item = workItemService.getWorkItem(workItemId, payload.userId);
+    const item = workItemService.getWorkItem(workItemId, authContext.userId, authContext.tenantId);
     if (!item) {
       return { status: 404, body: errorEnvelope(ERROR_CODES.NOT_FOUND, `work item not found: ${workItemId}`) };
     }
@@ -104,15 +90,10 @@ export function handleGetWorkItem(
 
 export function handleUpdateWorkItem(
   workItemService: WorkItemService,
-  authorizationHeader: string | undefined,
+  authContext: AuthContext,
   workItemId: string,
   requestBody: unknown,
 ): ControllerResponse {
-  const payload = extractBearerPayload(authorizationHeader);
-  if (!payload) {
-    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
-  }
-
   const { title, description, parent_id: parentId, depends_on_ids: dependsOnIds } = asRecord(requestBody);
   if (
     (title !== undefined && typeof title !== "string") ||
@@ -125,7 +106,7 @@ export function handleUpdateWorkItem(
   }
 
   try {
-    const item = workItemService.updateWorkItem(workItemId, payload.userId, {
+    const item = workItemService.updateWorkItem(workItemId, authContext.userId, authContext.tenantId, {
       title: title as string | undefined,
       description: description as string | null | undefined,
       parentId: parentId as string | null | undefined,
@@ -142,15 +123,11 @@ export function handleUpdateWorkItem(
 
 export function handleDeleteWorkItem(
   workItemService: WorkItemService,
-  authorizationHeader: string | undefined,
+  authContext: AuthContext,
   workItemId: string,
 ): ControllerResponse {
-  const payload = extractBearerPayload(authorizationHeader);
-  if (!payload) {
-    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
-  }
   try {
-    workItemService.deleteWorkItem(workItemId, payload.userId);
+    workItemService.deleteWorkItem(workItemId, authContext.userId, authContext.tenantId);
     return { status: 204 };
   } catch (err) {
     if (err instanceof WorkItemNotFoundError) {

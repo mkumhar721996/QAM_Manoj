@@ -1,6 +1,6 @@
 import type { AuthService } from "./authService.ts";
 import { InvalidCredentialsError, InvalidRefreshTokenError } from "./authService.ts";
-import { decodeAccessToken, verifyAccessToken } from "./tokenService.ts";
+import type { AuthContext } from "./requestAuth.ts";
 import { asRecord } from "../httpUtils.ts";
 import { ERROR_CODES, errorEnvelope } from "../errors/errorEnvelope.ts";
 
@@ -76,30 +76,7 @@ export function handleLogout(authService: AuthService, requestBody: unknown): Co
   return { status: 204 };
 }
 
-export function handleGetSession(authorizationHeader: string | undefined, now: number = Date.now()): ControllerResponse {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
-
-  if (!token) {
-    console.warn("session lookup failed: missing or malformed authorization header");
-    return {
-      status: 401,
-      body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or malformed authorization header"),
-    };
-  }
-
-  const payload = verifyAccessToken(token, now);
-  if (!payload) {
-    // decodeAccessToken skips the expiry check, so it tells us whether the
-    // token was well-formed and correctly signed but simply expired, vs invalid outright.
-    const decoded = decodeAccessToken(token);
-    console.warn(
-      decoded
-        ? `session lookup failed: expired access token for userId=${decoded.userId}`
-        : "session lookup failed: invalid access token",
-    );
-    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "invalid or expired access token") };
-  }
-
-  console.log(`session lookup succeeded for userId=${payload.userId}`);
-  return { status: 200, body: { user_id: payload.userId, role: payload.role } };
+export function handleGetSession(authContext: AuthContext): ControllerResponse {
+  console.log(`session lookup succeeded for userId=${authContext.userId}`);
+  return { status: 200, body: { user_id: authContext.userId, role: authContext.role } };
 }

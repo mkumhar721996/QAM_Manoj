@@ -19,7 +19,7 @@ class FaultyWorkItemRepository extends WorkItemRepository {
 }
 
 async function loginAs(baseUrl: string, username: string): Promise<string> {
-  const res = await fetch(`${baseUrl}/auth/login`, {
+  const res = await fetch(`${baseUrl}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password: TEST_PASSWORD }),
@@ -34,7 +34,7 @@ function createWorkItem(
   projectId: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  return fetch(`${baseUrl}/projects/${projectId}/work-items`, {
+  return fetch(`${baseUrl}/v1/projects/${projectId}/work-items`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(body),
@@ -42,20 +42,20 @@ function createWorkItem(
 }
 
 function getWorkItem(baseUrl: string, accessToken: string | undefined, workItemId: string): Promise<Response> {
-  return fetch(`${baseUrl}/work-items/${workItemId}`, {
+  return fetch(`${baseUrl}/v1/work-items/${workItemId}`, {
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
   });
 }
 
 function deleteWorkItem(baseUrl: string, accessToken: string, workItemId: string): Promise<Response> {
-  return fetch(`${baseUrl}/work-items/${workItemId}`, {
+  return fetch(`${baseUrl}/v1/work-items/${workItemId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 
 function postCartItem(baseUrl: string, accessToken: string, body: Record<string, unknown>): Promise<Response> {
-  return fetch(`${baseUrl}/cart/items`, {
+  return fetch(`${baseUrl}/v1/cart/items`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(body),
@@ -110,7 +110,10 @@ test("AC2: fetching a non-existent work item returns 404 NOT_FOUND envelope", as
 test("AC2: fetching a non-existent pizza returns 404 NOT_FOUND envelope", async () => {
   const server = await startTestServer();
   try {
-    const res = await fetch(`${server.baseUrl}/pizzas/does-not-exist`);
+    const token = await loginAs(server.baseUrl, "customer1");
+    const res = await fetch(`${server.baseUrl}/v1/pizzas/does-not-exist`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     assert.equal(res.status, 404);
     const body = (await res.json()) as Record<string, unknown>;
     assertEnvelopeShape(body, "NOT_FOUND");

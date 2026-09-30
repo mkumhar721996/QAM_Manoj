@@ -5,7 +5,7 @@ import { TEST_PASSWORD } from "../src/users/fixtures/testUsers.ts";
 import { stripV1Prefix } from "../src/routing.ts";
 
 async function loginAs(baseUrl: string, username: string): Promise<string> {
-  const res = await fetch(`${baseUrl}/auth/login`, {
+  const res = await fetch(`${baseUrl}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password: TEST_PASSWORD }),

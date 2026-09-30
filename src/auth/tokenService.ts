@@ -12,6 +12,7 @@ if (!JWT_SECRET) {
 export interface AccessTokenPayload {
   userId: string;
   role: Role;
+  tenantId: string;
   iat: number;
   exp: number;
 }
@@ -28,7 +29,10 @@ function sign(data: string): string {
   return crypto.createHmac("sha256", JWT_SECRET).update(data).digest("base64url");
 }
 
-export function issueAccessToken(payload: { userId: string; role: Role }, now: number = Date.now()): string {
+export function issueAccessToken(
+  payload: { userId: string; role: Role; tenantId: string },
+  now: number = Date.now(),
+): string {
   const header = { alg: "HS256", typ: "JWT" };
   const iat = Math.floor(now / 1000);
   const exp = iat + ACCESS_TOKEN_TTL_SECONDS;
