@@ -84,6 +84,11 @@ export class WorkItemService {
     return item;
   }
 
+  listWorkItems(projectId: string, userId: string): WorkItem[] {
+    const project = this.assertAccess(this.projectRepository.findById(projectId), projectId, userId);
+    return this.workItemRepository.findByProjectId(project.id);
+  }
+
   getWorkItem(id: string, userId: string): WorkItem | undefined {
     const item = this.workItemRepository.findById(id);
     if (!item) {

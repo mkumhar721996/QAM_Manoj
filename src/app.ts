@@ -16,6 +16,7 @@ import {
   handleCreateWorkItem,
   handleDeleteWorkItem,
   handleGetWorkItem,
+  handleListWorkItems,
   handleUpdateWorkItem,
 } from "./workitems/workItemController.ts";
 import { stripV1Prefix } from "./routing.ts";
@@ -98,6 +99,17 @@ async function handleRequest(
     }
 
     const createWorkItemMatch = v1Path !== null ? v1Path.match(/^\/projects\/([^/]+)\/work-items$/) : null;
+    if (method === "GET" && createWorkItemMatch) {
+      const result = handleListWorkItems(
+        workItemService,
+        req.headers.authorization,
+        createWorkItemMatch[1],
+        url.searchParams,
+      );
+      sendJson(res, result.status, result.body);
+      return;
+    }
+
     const isCreateWorkItem = method === "POST" && createWorkItemMatch !== null;
     const isUpdateWorkItem = method === "PATCH" && workItemMatch !== null;
 
