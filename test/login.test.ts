@@ -36,8 +36,9 @@ test("AC7: incorrect password is rejected with a clear generic error message", a
       body: JSON.stringify({ username: "customer1", password: "wrong-password" }),
     });
     assert.equal(res.status, 401);
-    const body = (await res.json()) as { error: string };
-    assert.equal(body.error, "Invalid username or password");
+    const body = (await res.json()) as { error_code: string; message: string };
+    assert.equal(body.error_code, "UNAUTHORIZED");
+    assert.equal(body.message, "Invalid username or password");
   } finally {
     await server.close();
   }
@@ -52,8 +53,9 @@ test("AC7: unknown username is rejected with the same generic error message", as
       body: JSON.stringify({ username: "no-such-user", password: TEST_PASSWORD }),
     });
     assert.equal(res.status, 401);
-    const body = (await res.json()) as { error: string };
-    assert.equal(body.error, "Invalid username or password");
+    const body = (await res.json()) as { error_code: string; message: string };
+    assert.equal(body.error_code, "UNAUTHORIZED");
+    assert.equal(body.message, "Invalid username or password");
   } finally {
     await server.close();
   }
@@ -123,8 +125,9 @@ test("AC13: login behaves identically for every role", async () => {
         body: JSON.stringify({ username: user.username, password: "wrong-password" }),
       });
       assert.equal(failRes.status, 401);
-      const failBody = (await failRes.json()) as { error: string };
-      assert.equal(failBody.error, "Invalid username or password");
+      const failBody = (await failRes.json()) as { error_code: string; message: string };
+      assert.equal(failBody.error_code, "UNAUTHORIZED");
+      assert.equal(failBody.message, "Invalid username or password");
     }
   } finally {
     await server.close();

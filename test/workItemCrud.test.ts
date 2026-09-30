@@ -187,8 +187,8 @@ test("AC7: deleting a work item with a child is rejected and lists the blocking 
 
     const res = await deleteWorkItem(server.baseUrl, token, parent.id);
     assert.equal(res.status, 409);
-    const body = (await res.json()) as { blocking_ids: string[] };
-    assert.ok(body.blocking_ids.includes(child.id));
+    const body = (await res.json()) as { details: { blocking_ids: string[] } };
+    assert.ok(body.details.blocking_ids.includes(child.id));
   } finally {
     await server.close();
   }
@@ -275,8 +275,8 @@ test("AC13: creating under a non-existent project id returns 404 naming the proj
     const token = await loginAs(server.baseUrl, "customer1");
     const res = await createWorkItem(server.baseUrl, token, "project-does-not-exist", { kind: "TASK", title: "x" });
     assert.equal(res.status, 404);
-    const body = (await res.json()) as { project_id: string };
-    assert.equal(body.project_id, "project-does-not-exist");
+    const body = (await res.json()) as { details: { project_id: string } };
+    assert.equal(body.details.project_id, "project-does-not-exist");
   } finally {
     await server.close();
   }
@@ -288,8 +288,8 @@ test("AC14: creating under a project the caller lacks access to returns 403 nami
     const token = await loginAs(server.baseUrl, "customer1");
     const res = await createWorkItem(server.baseUrl, token, "project-zephyr", { kind: "TASK", title: "x" });
     assert.equal(res.status, 403);
-    const body = (await res.json()) as { project_id: string };
-    assert.equal(body.project_id, "project-zephyr");
+    const body = (await res.json()) as { details: { project_id: string } };
+    assert.equal(body.details.project_id, "project-zephyr");
   } finally {
     await server.close();
   }

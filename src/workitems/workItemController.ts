@@ -1,6 +1,7 @@
 import type { ControllerResponse } from "../auth/authController.ts";
 import { verifyAccessToken } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
+import { ERROR_CODES, errorEnvelope } from "../errors/errorEnvelope.ts";
 import type { WorkItem } from "./workItemModel.ts";
 import {
   BlockingDependentsError,
@@ -38,7 +39,7 @@ export function handleCreateWorkItem(
 ): ControllerResponse {
   const payload = extractBearerPayload(authorizationHeader);
   if (!payload) {
-    return { status: 401, body: { error: "missing or invalid authorization" } };
+    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
   }
 
   const { kind, title, description, parent_id: parentId, depends_on_ids: dependsOnIds } = asRecord(requestBody);
@@ -52,7 +53,7 @@ export function handleCreateWorkItem(
     (dependsOnIds !== undefined &&
       (!Array.isArray(dependsOnIds) || !dependsOnIds.every((d) => typeof d === "string")))
   ) {
-    return { status: 400, body: { error: "invalid work item payload" } };
+    return { status: 400, body: errorEnvelope(ERROR_CODES.VALIDATION_ERROR, "invalid work item payload") };
   }
 
   try {
@@ -66,13 +67,13 @@ export function handleCreateWorkItem(
     return { status: 201, body: serializeWorkItem(item) };
   } catch (err) {
     if (err instanceof ProjectNotFoundError) {
-      return { status: 404, body: { error: err.message, project_id: projectId } };
+      return { status: 404, body: errorEnvelope(ERROR_CODES.NOT_FOUND, err.message, { project_id: projectId }) };
     }
     if (err instanceof ProjectAccessDeniedError) {
-      return { status: 403, body: { error: err.message, project_id: projectId } };
+      return { status: 403, body: errorEnvelope(ERROR_CODES.FORBIDDEN, err.message, { project_id: projectId }) };
     }
     if (err instanceof SequenceCapacityExceededError) {
-      return { status: 409, body: { error: err.message } };
+      return { status: 409, body: errorEnvelope(ERROR_CODES.CONFLICT, err.message) };
     }
     throw err;
   }
@@ -85,17 +86,17 @@ export function handleGetWorkItem(
 ): ControllerResponse {
   const payload = extractBearerPayload(authorizationHeader);
   if (!payload) {
-    return { status: 401, body: { error: "missing or invalid authorization" } };
+    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
   }
   try {
     const item = workItemService.getWorkItem(workItemId, payload.userId);
     if (!item) {
-      return { status: 404, body: { error: `work item not found: ${workItemId}` } };
+      return { status: 404, body: errorEnvelope(ERROR_CODES.NOT_FOUND, `work item not found: ${workItemId}`) };
     }
     return { status: 200, body: serializeWorkItem(item) };
   } catch (err) {
     if (err instanceof ProjectAccessDeniedError) {
-      return { status: 403, body: { error: err.message } };
+      return { status: 403, body: errorEnvelope(ERROR_CODES.FORBIDDEN, err.message) };
     }
     throw err;
   }
@@ -109,7 +110,7 @@ export function handleUpdateWorkItem(
 ): ControllerResponse {
   const payload = extractBearerPayload(authorizationHeader);
   if (!payload) {
-    return { status: 401, body: { error: "missing or invalid authorization" } };
+    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
   }
 
   const { title, description, parent_id: parentId, depends_on_ids: dependsOnIds } = asRecord(requestBody);
@@ -120,7 +121,7 @@ export function handleUpdateWorkItem(
     (dependsOnIds !== undefined &&
       (!Array.isArray(dependsOnIds) || !dependsOnIds.every((d) => typeof d === "string")))
   ) {
-    return { status: 400, body: { error: "invalid work item payload" } };
+    return { status: 400, body: errorEnvelope(ERROR_CODES.VALIDATION_ERROR, "invalid work item payload") };
   }
 
   try {
@@ -133,7 +134,7 @@ export function handleUpdateWorkItem(
     return { status: 200, body: { work_item: item ? serializeWorkItem(item) : null } };
   } catch (err) {
     if (err instanceof ProjectAccessDeniedError) {
-      return { status: 403, body: { error: err.message } };
+      return { status: 403, body: errorEnvelope(ERROR_CODES.FORBIDDEN, err.message) };
     }
     throw err;
   }
@@ -146,20 +147,23 @@ export function handleDeleteWorkItem(
 ): ControllerResponse {
   const payload = extractBearerPayload(authorizationHeader);
   if (!payload) {
-    return { status: 401, body: { error: "missing or invalid authorization" } };
+    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
   }
   try {
     workItemService.deleteWorkItem(workItemId, payload.userId);
     return { status: 204 };
   } catch (err) {
     if (err instanceof WorkItemNotFoundError) {
-      return { status: 404, body: { error: err.message } };
+      return { status: 404, body: errorEnvelope(ERROR_CODES.NOT_FOUND, err.message) };
     }
     if (err instanceof ProjectAccessDeniedError) {
-      return { status: 403, body: { error: err.message } };
+      return { status: 403, body: errorEnvelope(ERROR_CODES.FORBIDDEN, err.message) };
     }
     if (err instanceof BlockingDependentsError) {
-      return { status: 409, body: { error: err.message, blocking_ids: err.blockingIds } };
+      return {
+        status: 409,
+        body: errorEnvelope(ERROR_CODES.CONFLICT, err.message, { blocking_ids: err.blockingIds }),
+      };
     }
     throw err;
   }
