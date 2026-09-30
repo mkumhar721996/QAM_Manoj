@@ -47,9 +47,9 @@ test("AC1: missing Authorization header returns 401 UNAUTHORIZED on any /v1/ end
     for (const path of ["/v1/auth/session", "/v1/pizzas/pizza-margherita"]) {
       const res = await fetch(`${server.baseUrl}${path}`);
       assert.equal(res.status, 401);
-      const body = (await res.json()) as { error: { code: string; message: string } };
-      assert.equal(body.error.code, "UNAUTHORIZED");
-      assert.ok(body.error.message.length > 0);
+      const body = (await res.json()) as { error_code: string; message: string };
+      assert.equal(body.error_code, "UNAUTHORIZED");
+      assert.ok(body.message.length > 0);
     }
   } finally {
     await server.close();
@@ -63,7 +63,7 @@ test("AC2: malformed or expired bearer token returns 401 UNAUTHORIZED", async ()
       headers: { Authorization: "Bearer not-a-real-token" },
     });
     assert.equal(malformedRes.status, 401);
-    assert.equal(((await malformedRes.json()) as { error: { code: string } }).error.code, "UNAUTHORIZED");
+    assert.equal(((await malformedRes.json()) as { error_code: string }).error_code, "UNAUTHORIZED");
 
     const expiredToken = issueAccessToken(
       { userId: "user-customer-1", role: "customer", tenantId: "tenant-1" },
@@ -73,7 +73,7 @@ test("AC2: malformed or expired bearer token returns 401 UNAUTHORIZED", async ()
       headers: { Authorization: `Bearer ${expiredToken}` },
     });
     assert.equal(expiredRes.status, 401);
-    assert.equal(((await expiredRes.json()) as { error: { code: string } }).error.code, "UNAUTHORIZED");
+    assert.equal(((await expiredRes.json()) as { error_code: string }).error_code, "UNAUTHORIZED");
   } finally {
     await server.close();
   }
@@ -155,9 +155,9 @@ test("AC6: a role without permission for an operation gets 403 FORBIDDEN", async
       quantity: 1,
     });
     assert.equal(res.status, 403);
-    const body = (await res.json()) as { error: { code: string; message: string } };
-    assert.equal(body.error.code, "FORBIDDEN");
-    assert.ok(body.error.message.length > 0);
+    const body = (await res.json()) as { error_code: string; message: string };
+    assert.equal(body.error_code, "FORBIDDEN");
+    assert.ok(body.message.length > 0);
   } finally {
     await server.close();
   }
