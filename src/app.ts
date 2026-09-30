@@ -3,6 +3,8 @@ import { UserRepository } from "./users/userRepository.ts";
 import { SessionRepository } from "./sessions/sessionRepository.ts";
 import { AuthService } from "./auth/authService.ts";
 import { handleGetSession, handleLogin, handleLogout, handleRefresh } from "./auth/authController.ts";
+import { resolveAuthContext } from "./auth/requestAuth.ts";
+import type { AuthContext } from "./auth/requestAuth.ts";
 import { InvalidJsonBodyError, PayloadTooLargeError, readJsonBody, sendJson } from "./httpUtils.ts";
 import { ERROR_CODES, errorEnvelope } from "./errors/errorEnvelope.ts";
 import { PizzaRepository } from "./pizzas/pizzaRepository.ts";
@@ -32,6 +34,8 @@ export interface AppDependencies {
 export interface App {
   requestListener: RequestListener;
 }
+
+const PUBLIC_ROUTES = new Set(["POST /v1/auth/login", "POST /v1/auth/refresh", "POST /v1/auth/logout"]);
 
 export function createApp(deps: AppDependencies = {}): App {
   const userRepository = deps.userRepository ?? new UserRepository();
@@ -64,21 +68,31 @@ async function handleRequest(
   const route = `${method} ${url.pathname}`;
 
   try {
-    if (route === "GET /auth/session") {
-      const result = handleGetSession(req.headers.authorization);
+    let authContext: AuthContext | undefined;
+    if (url.pathname.startsWith("/v1/") && !PUBLIC_ROUTES.has(route)) {
+      const context = resolveAuthContext(req.headers.authorization);
+      if (!context) {
+        sendJson(res, 401, errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing, malformed, or expired bearer token"));
+        return;
+      }
+      authContext = context;
+    }
+
+    if (route === "GET /v1/auth/session") {
+      const result = handleGetSession(authContext!);
       sendJson(res, result.status, result.body);
       return;
     }
 
-    const pizzaMatch = url.pathname.match(/^\/pizzas\/([^/]+)$/);
+    const pizzaMatch = url.pathname.match(/^\/v1\/pizzas\/([^/]+)$/);
     if (method === "GET" && pizzaMatch) {
       const result = handleGetPizza(pizzaRepository, pizzaMatch[1]);
       sendJson(res, result.status, result.body);
       return;
     }
 
-    if (route === "GET /cart") {
-      const result = handleGetCart(cartService, req.headers.authorization);
+    if (route === "GET /v1/cart") {
+      const result = handleGetCart(cartService, authContext!);
       sendJson(res, result.status, result.body);
       return;
     }
@@ -87,12 +101,12 @@ async function handleRequest(
 
     const workItemMatch = v1Path !== null ? v1Path.match(/^\/work-items\/([^/]+)$/) : null;
     if (method === "GET" && workItemMatch) {
-      const result = handleGetWorkItem(workItemService, req.headers.authorization, workItemMatch[1]);
+      const result = handleGetWorkItem(workItemService, authContext!, workItemMatch[1]);
       sendJson(res, result.status, result.body);
       return;
     }
     if (method === "DELETE" && workItemMatch) {
-      const result = handleDeleteWorkItem(workItemService, req.headers.authorization, workItemMatch[1]);
+      const result = handleDeleteWorkItem(workItemService, authContext!, workItemMatch[1]);
       sendJson(res, result.status, result.body);
       return;
     }
@@ -102,10 +116,10 @@ async function handleRequest(
     const isUpdateWorkItem = method === "PATCH" && workItemMatch !== null;
 
     if (
-      route !== "POST /auth/login" &&
-      route !== "POST /auth/refresh" &&
-      route !== "POST /auth/logout" &&
-      route !== "POST /cart/items" &&
+      route !== "POST /v1/auth/login" &&
+      route !== "POST /v1/auth/refresh" &&
+      route !== "POST /v1/auth/logout" &&
+      route !== "POST /v1/cart/items" &&
       !isCreateWorkItem &&
       !isUpdateWorkItem
     ) {
@@ -116,31 +130,31 @@ async function handleRequest(
     const body = await readJsonBody(req);
 
     if (isCreateWorkItem) {
-      const result = handleCreateWorkItem(workItemService, req.headers.authorization, createWorkItemMatch![1], body);
+      const result = handleCreateWorkItem(workItemService, authContext!, createWorkItemMatch![1], body);
       sendJson(res, result.status, result.body);
       return;
     }
 
     if (isUpdateWorkItem) {
-      const result = handleUpdateWorkItem(workItemService, req.headers.authorization, workItemMatch![1], body);
+      const result = handleUpdateWorkItem(workItemService, authContext!, workItemMatch![1], body);
       sendJson(res, result.status, result.body);
       return;
     }
 
-    if (route === "POST /auth/login") {
+    if (route === "POST /v1/auth/login") {
       const result = await handleLogin(authService, body);
       sendJson(res, result.status, result.body);
       return;
     }
 
-    if (route === "POST /auth/refresh") {
+    if (route === "POST /v1/auth/refresh") {
       const result = handleRefresh(authService, body);
       sendJson(res, result.status, result.body);
       return;
     }
 
-    if (route === "POST /cart/items") {
-      const result = handleAddToCart(cartService, req.headers.authorization, body);
+    if (route === "POST /v1/cart/items") {
+      const result = handleAddToCart(cartService, authContext!, body);
       sendJson(res, result.status, result.body);
       return;
     }

@@ -12,7 +12,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
 test("AC1: valid login issues an access token expiring in exactly 15 minutes", async () => {
   const server = await startTestServer();
   try {
-    const res = await fetch(`${server.baseUrl}/auth/login`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD }),
@@ -30,7 +30,7 @@ test("AC1: valid login issues an access token expiring in exactly 15 minutes", a
 test("AC7: incorrect password is rejected with a clear generic error message", async () => {
   const server = await startTestServer();
   try {
-    const res = await fetch(`${server.baseUrl}/auth/login`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "customer1", password: "wrong-password" }),
@@ -47,7 +47,7 @@ test("AC7: incorrect password is rejected with a clear generic error message", a
 test("AC7: unknown username is rejected with the same generic error message", async () => {
   const server = await startTestServer();
   try {
-    const res = await fetch(`${server.baseUrl}/auth/login`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "no-such-user", password: TEST_PASSWORD }),
@@ -65,7 +65,7 @@ test("AC8: no session is created after a failed login", async () => {
   const sessionRepository = new SessionRepository();
   const server = await startTestServer({ sessionRepository });
   try {
-    const res = await fetch(`${server.baseUrl}/auth/login`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "customer1", password: "wrong-password" }),
@@ -84,7 +84,7 @@ test("AC10: login response and request contract expose no remember-me option", a
   const sessionRepository = new SessionRepository();
   const server = await startTestServer({ sessionRepository });
   try {
-    const res = await fetch(`${server.baseUrl}/auth/login`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD, rememberMe: true }),
@@ -107,7 +107,7 @@ test("AC13: login behaves identically for every role", async () => {
   const server = await startTestServer();
   try {
     for (const user of testUsers) {
-      const res = await fetch(`${server.baseUrl}/auth/login`, {
+      const res = await fetch(`${server.baseUrl}/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: user.username, password: TEST_PASSWORD }),
@@ -119,7 +119,7 @@ test("AC13: login behaves identically for every role", async () => {
       const payload = decodeJwtPayload(body.access_token);
       assert.equal(payload.exp as number, (payload.iat as number) + 15 * 60);
 
-      const failRes = await fetch(`${server.baseUrl}/auth/login`, {
+      const failRes = await fetch(`${server.baseUrl}/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: user.username, password: "wrong-password" }),

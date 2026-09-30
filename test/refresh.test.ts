@@ -6,7 +6,7 @@ import { SessionRepository } from "../src/sessions/sessionRepository.ts";
 import { issueAccessToken } from "../src/auth/tokenService.ts";
 
 async function login(baseUrl: string): Promise<{ access_token: string; refresh_token: string }> {
-  const res = await fetch(`${baseUrl}/auth/login`, {
+  const res = await fetch(`${baseUrl}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD }),
@@ -31,7 +31,7 @@ test("AC3: an expired access token can be renewed transparently via a valid refr
   try {
     const { refresh_token: refreshToken } = await login(server.baseUrl);
 
-    const res = await fetch(`${server.baseUrl}/auth/refresh`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
@@ -53,7 +53,7 @@ test("AC4: an expired refresh token is rejected so the client can redirect to lo
     const expiredRefreshToken = "expired-refresh-token";
     sessionRepository.create("user-customer-1", expiredRefreshToken, 7 * 24 * 60 * 60 * 1000, eightDaysAgo);
 
-    const res = await fetch(`${server.baseUrl}/auth/refresh`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: expiredRefreshToken }),
@@ -70,7 +70,7 @@ test("AC4: an expired refresh token is rejected so the client can redirect to lo
 test("AC4: an unknown refresh token is rejected", async () => {
   const server = await startTestServer();
   try {
-    const res = await fetch(`${server.baseUrl}/auth/refresh`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: "never-issued-token" }),
@@ -86,7 +86,7 @@ test("AC3: a valid access token authenticates a protected request", async () => 
   try {
     const { access_token: accessToken } = await login(server.baseUrl);
 
-    const res = await fetch(`${server.baseUrl}/auth/session`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/session`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     assert.equal(res.status, 200);
@@ -101,10 +101,10 @@ test("AC3: a valid access token authenticates a protected request", async () => 
 test("AC3: a missing or invalid access token is rejected on a protected request", async () => {
   const server = await startTestServer();
   try {
-    const noAuthRes = await fetch(`${server.baseUrl}/auth/session`);
+    const noAuthRes = await fetch(`${server.baseUrl}/v1/auth/session`);
     assert.equal(noAuthRes.status, 401);
 
-    const badAuthRes = await fetch(`${server.baseUrl}/auth/session`, {
+    const badAuthRes = await fetch(`${server.baseUrl}/v1/auth/session`, {
       headers: { Authorization: "Bearer not-a-real-token" },
     });
     assert.equal(badAuthRes.status, 401);
@@ -117,9 +117,12 @@ test("AC3: an expired access token is rejected on a protected request", async ()
   const server = await startTestServer();
   try {
     const sixteenMinutesAgo = Date.now() - 16 * 60 * 1000;
-    const expiredAccessToken = issueAccessToken({ userId: "user-customer-1", role: "customer" }, sixteenMinutesAgo);
+    const expiredAccessToken = issueAccessToken(
+      { userId: "user-customer-1", role: "customer", tenantId: "tenant-1" },
+      sixteenMinutesAgo,
+    );
 
-    const res = await fetch(`${server.baseUrl}/auth/session`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/session`, {
       headers: { Authorization: `Bearer ${expiredAccessToken}` },
     });
     assert.equal(res.status, 401);
@@ -139,7 +142,7 @@ test("AC9: a long idle period does not invalidate a still-valid refresh token", 
     const session = sessionRepository.findByRefreshToken(refreshToken)!;
     assert.equal(sessionRepository.isValid(session, sixDaysLater), true);
 
-    const res = await fetch(`${server.baseUrl}/auth/refresh`, {
+    const res = await fetch(`${server.baseUrl}/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),

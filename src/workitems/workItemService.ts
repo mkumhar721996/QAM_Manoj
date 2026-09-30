@@ -52,18 +52,24 @@ export class WorkItemService {
     this.workItemRepository = workItemRepository;
   }
 
-  private assertAccess(project: Project | undefined, projectId: string, userId: string): Project {
+  private assertAccess(project: Project | undefined, projectId: string, userId: string, tenantId: string): Project {
     if (!project) {
       throw new ProjectNotFoundError(projectId);
     }
-    if (!this.projectRepository.hasAccess(project, userId)) {
+    if (project.tenantId !== tenantId || !this.projectRepository.hasAccess(project, userId)) {
       throw new ProjectAccessDeniedError(projectId);
     }
     return project;
   }
 
-  createWorkItem(projectId: string, userId: string, input: CreateWorkItemInput, now: number = Date.now()): WorkItem {
-    const project = this.assertAccess(this.projectRepository.findById(projectId), projectId, userId);
+  createWorkItem(
+    projectId: string,
+    userId: string,
+    tenantId: string,
+    input: CreateWorkItemInput,
+    now: number = Date.now(),
+  ): WorkItem {
+    const project = this.assertAccess(this.projectRepository.findById(projectId), projectId, userId, tenantId);
     const sequence = this.workItemRepository.nextSequence(project.key, input.kind);
     if (sequence === null) {
       throw new SequenceCapacityExceededError(`${project.key}-${input.kind}`);
@@ -84,21 +90,27 @@ export class WorkItemService {
     return item;
   }
 
-  getWorkItem(id: string, userId: string): WorkItem | undefined {
+  getWorkItem(id: string, userId: string, tenantId: string): WorkItem | undefined {
     const item = this.workItemRepository.findById(id);
     if (!item) {
       return undefined;
     }
-    this.assertAccess(this.projectRepository.findById(item.projectId), item.projectId, userId);
+    this.assertAccess(this.projectRepository.findById(item.projectId), item.projectId, userId, tenantId);
     return item;
   }
 
-  updateWorkItem(id: string, userId: string, patch: UpdateWorkItemInput, now: number = Date.now()): WorkItem | undefined {
+  updateWorkItem(
+    id: string,
+    userId: string,
+    tenantId: string,
+    patch: UpdateWorkItemInput,
+    now: number = Date.now(),
+  ): WorkItem | undefined {
     const existing = this.workItemRepository.findById(id);
     if (!existing) {
       return undefined;
     }
-    this.assertAccess(this.projectRepository.findById(existing.projectId), existing.projectId, userId);
+    this.assertAccess(this.projectRepository.findById(existing.projectId), existing.projectId, userId, tenantId);
     const updated: WorkItem = {
       ...existing,
       ...(patch.title !== undefined ? { title: patch.title } : {}),
@@ -111,12 +123,12 @@ export class WorkItemService {
     return updated;
   }
 
-  deleteWorkItem(id: string, userId: string): void {
+  deleteWorkItem(id: string, userId: string, tenantId: string): void {
     const existing = this.workItemRepository.findById(id);
     if (!existing) {
       throw new WorkItemNotFoundError(id);
     }
-    this.assertAccess(this.projectRepository.findById(existing.projectId), existing.projectId, userId);
+    this.assertAccess(this.projectRepository.findById(existing.projectId), existing.projectId, userId, tenantId);
     const blockingIds = [
       ...this.workItemRepository.findChildren(id),
       ...this.workItemRepository.findDependents(id),

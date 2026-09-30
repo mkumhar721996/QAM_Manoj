@@ -1,14 +1,9 @@
 import type { ControllerResponse } from "../auth/authController.ts";
-import { verifyAccessToken } from "../auth/tokenService.ts";
+import type { AuthContext } from "../auth/requestAuth.ts";
 import { asRecord } from "../httpUtils.ts";
 import { ERROR_CODES, errorEnvelope } from "../errors/errorEnvelope.ts";
 import type { PizzaRepository } from "../pizzas/pizzaRepository.ts";
 import { CartService, InvalidCustomisationError, PizzaNotFoundError } from "./cartService.ts";
-
-function extractBearerPayload(authorizationHeader: string | undefined) {
-  const token = authorizationHeader?.startsWith("Bearer ") ? authorizationHeader.slice("Bearer ".length) : undefined;
-  return token ? verifyAccessToken(token) : null;
-}
 
 export function handleGetPizza(pizzaRepository: PizzaRepository, pizzaId: string): ControllerResponse {
   const pizza = pizzaRepository.findById(pizzaId);
@@ -23,12 +18,14 @@ export function handleGetPizza(pizzaRepository: PizzaRepository, pizzaId: string
 
 export function handleAddToCart(
   cartService: CartService,
-  authorizationHeader: string | undefined,
+  authContext: AuthContext,
   requestBody: unknown,
 ): ControllerResponse {
-  const payload = extractBearerPayload(authorizationHeader);
-  if (!payload) {
-    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
+  if (authContext.role === "admin") {
+    return {
+      status: 403,
+      body: errorEnvelope(ERROR_CODES.FORBIDDEN, "role 'admin' is not permitted to place cart orders"),
+    };
   }
 
   const {
@@ -53,7 +50,7 @@ export function handleAddToCart(
   }
 
   try {
-    const item = cartService.addPizzaToCart(payload.userId, {
+    const item = cartService.addPizzaToCart(authContext.userId, {
       pizzaId,
       size,
       crust,
@@ -84,13 +81,8 @@ export function handleAddToCart(
   }
 }
 
-export function handleGetCart(cartService: CartService, authorizationHeader: string | undefined): ControllerResponse {
-  const payload = extractBearerPayload(authorizationHeader);
-  if (!payload) {
-    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
-  }
-
-  const items = cartService.getCart(payload.userId).map((item) => ({
+export function handleGetCart(cartService: CartService, authContext: AuthContext): ControllerResponse {
+  const items = cartService.getCart(authContext.userId).map((item) => ({
     id: item.id,
     pizza_id: item.pizzaId,
     size: item.size,

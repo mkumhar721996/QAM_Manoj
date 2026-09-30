@@ -4,7 +4,7 @@ import { startTestServer } from "./testServer.ts";
 import { TEST_PASSWORD } from "../src/users/fixtures/testUsers.ts";
 
 async function login(baseUrl: string): Promise<{ access_token: string }> {
-  const res = await fetch(`${baseUrl}/auth/login`, {
+  const res = await fetch(`${baseUrl}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "customer1", password: TEST_PASSWORD }),
@@ -13,7 +13,7 @@ async function login(baseUrl: string): Promise<{ access_token: string }> {
 }
 
 function postCartItem(baseUrl: string, accessToken: string, body: Record<string, unknown>): Promise<Response> {
-  return fetch(`${baseUrl}/cart/items`, {
+  return fetch(`${baseUrl}/v1/cart/items`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(body),
@@ -23,7 +23,10 @@ function postCartItem(baseUrl: string, accessToken: string, body: Record<string,
 test("AC1: pizza customisation options expose sizes, crusts, and toppings", async () => {
   const server = await startTestServer();
   try {
-    const res = await fetch(`${server.baseUrl}/pizzas/pizza-margherita`);
+    const { access_token: accessToken } = await login(server.baseUrl);
+    const res = await fetch(`${server.baseUrl}/v1/pizzas/pizza-margherita`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
     assert.equal(res.status, 200);
     const body = (await res.json()) as { sizes: unknown[]; crusts: unknown[]; toppings: unknown[] };
     assert.ok(Array.isArray(body.sizes) && body.sizes.length > 0);
@@ -124,7 +127,7 @@ test("AC4: the cart contains an entry reflecting exactly the chosen configuratio
     const postRes = await postCartItem(server.baseUrl, accessToken, config);
     assert.equal(postRes.status, 201);
 
-    const cartRes = await fetch(`${server.baseUrl}/cart`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const cartRes = await fetch(`${server.baseUrl}/v1/cart`, { headers: { Authorization: `Bearer ${accessToken}` } });
     assert.equal(cartRes.status, 200);
     const cartBody = (await cartRes.json()) as { items: Array<Record<string, unknown>> };
     assert.equal(cartBody.items.length, 1);
