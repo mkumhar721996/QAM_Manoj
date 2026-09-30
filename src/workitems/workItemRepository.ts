@@ -41,4 +41,10 @@ export class WorkItemRepository {
   findDependents(id: string): WorkItem[] {
     return [...this.itemsById.values()].filter((item) => item.dependsOnIds.includes(id));
   }
+
+  findByProjectId(projectId: string): WorkItem[] {
+    return [...this.itemsById.values()]
+      .filter((item) => item.projectId === projectId)
+      .sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
+  }
 }

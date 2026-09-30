@@ -2,6 +2,13 @@ import type { ControllerResponse } from "../auth/authController.ts";
 import { verifyAccessToken } from "../auth/tokenService.ts";
 import { asRecord } from "../httpUtils.ts";
 import { ERROR_CODES, errorEnvelope } from "../errors/errorEnvelope.ts";
+import {
+  buildPaginationEnvelope,
+  paginateArray,
+  parsePaginationParams,
+  PaginationValidationError,
+  type PaginationParams,
+} from "../pagination.ts";
 import type { WorkItem } from "./workItemModel.ts";
 import {
   BlockingDependentsError,
@@ -74,6 +81,45 @@ export function handleCreateWorkItem(
     }
     if (err instanceof SequenceCapacityExceededError) {
       return { status: 409, body: errorEnvelope(ERROR_CODES.CONFLICT, err.message) };
+    }
+    throw err;
+  }
+}
+
+export function handleListWorkItems(
+  workItemService: WorkItemService,
+  authorizationHeader: string | undefined,
+  projectId: string,
+  searchParams: URLSearchParams,
+): ControllerResponse {
+  const payload = extractBearerPayload(authorizationHeader);
+  if (!payload) {
+    return { status: 401, body: errorEnvelope(ERROR_CODES.UNAUTHORIZED, "missing or invalid authorization") };
+  }
+
+  let pagination: PaginationParams;
+  try {
+    pagination = parsePaginationParams(searchParams);
+  } catch (err) {
+    if (err instanceof PaginationValidationError) {
+      return { status: 400, body: errorEnvelope(ERROR_CODES.VALIDATION_ERROR, err.message) };
+    }
+    throw err;
+  }
+
+  try {
+    const allItems = workItemService.listWorkItems(projectId, payload.userId);
+    const page = paginateArray(allItems, pagination.limit, pagination.offset);
+    return {
+      status: 200,
+      body: buildPaginationEnvelope(page.map(serializeWorkItem), allItems.length, pagination.limit, pagination.offset),
+    };
+  } catch (err) {
+    if (err instanceof ProjectNotFoundError) {
+      return { status: 404, body: errorEnvelope(ERROR_CODES.NOT_FOUND, err.message, { project_id: projectId }) };
+    }
+    if (err instanceof ProjectAccessDeniedError) {
+      return { status: 403, body: errorEnvelope(ERROR_CODES.FORBIDDEN, err.message, { project_id: projectId }) };
     }
     throw err;
   }
